@@ -86,6 +86,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@TazaEl" },
+      { name: "twitter:title", content: "TazaEl — Экологиялық цифрлық платформа" },
+      { name: "twitter:description", content: "Қазақстандағы экологиялық мәдениетті қалыптастыратын бірыңғай цифрлық экожүйе." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9b30c5f5-4aff-47c3-9e7e-b45d9e1d7aaf/id-preview-342d5548--4cd2ab24-3160-4cd9-8d84-1a82f0431e4e.lovable.app-1781020479019.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/9b30c5f5-4aff-47c3-9e7e-b45d9e1d7aaf/id-preview-342d5548--4cd2ab24-3160-4cd9-8d84-1a82f0431e4e.lovable.app-1781020479019.png" },
     ],
     links: [
       {
