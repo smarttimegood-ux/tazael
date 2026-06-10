@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      eco_reports: {
+        Row: {
+          ai_recommendation: string | null
+          ai_summary: string | null
+          category: Database["public"]["Enums"]["eco_category"]
+          created_at: string
+          description: string
+          id: string
+          lat: number
+          lng: number
+          location_name: string
+          reporter_contact: string | null
+          reporter_name: string | null
+          severity: Database["public"]["Enums"]["eco_severity"]
+          status: Database["public"]["Enums"]["eco_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_recommendation?: string | null
+          ai_summary?: string | null
+          category?: Database["public"]["Enums"]["eco_category"]
+          created_at?: string
+          description: string
+          id?: string
+          lat: number
+          lng: number
+          location_name: string
+          reporter_contact?: string | null
+          reporter_name?: string | null
+          severity?: Database["public"]["Enums"]["eco_severity"]
+          status?: Database["public"]["Enums"]["eco_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_recommendation?: string | null
+          ai_summary?: string | null
+          category?: Database["public"]["Enums"]["eco_category"]
+          created_at?: string
+          description?: string
+          id?: string
+          lat?: number
+          lng?: number
+          location_name?: string
+          reporter_contact?: string | null
+          reporter_name?: string | null
+          severity?: Database["public"]["Enums"]["eco_severity"]
+          status?: Database["public"]["Enums"]["eco_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +76,17 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      eco_category:
+        | "illegal_dump"
+        | "oil_spill"
+        | "water_shortage"
+        | "air_pollution"
+        | "radioactive"
+        | "sea_pollution"
+        | "dead_wildlife"
+        | "other"
+      eco_severity: "low" | "medium" | "high" | "critical"
+      eco_status: "new" | "in_review" | "in_progress" | "resolved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +213,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      eco_category: [
+        "illegal_dump",
+        "oil_spill",
+        "water_shortage",
+        "air_pollution",
+        "radioactive",
+        "sea_pollution",
+        "dead_wildlife",
+        "other",
+      ],
+      eco_severity: ["low", "medium", "high", "critical"],
+      eco_status: ["new", "in_review", "in_progress", "resolved", "rejected"],
+    },
   },
 } as const
