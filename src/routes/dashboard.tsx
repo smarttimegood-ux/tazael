@@ -6,7 +6,8 @@ import { MangystauNav } from "@/components/MangystauNav";
 import { listReports, updateReportStatus, askEcoAdvisor } from "@/lib/reports.functions";
 import { useLanguage } from "@/context/LanguageContext";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity } from "lucide-react";
+import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/dashboard")({
   ssr: false,
@@ -18,6 +19,37 @@ const SEVERITY_COLOR: Record<string, string> = { low: "#16a34a", medium: "#eab30
 const STATUS_COLOR: Record<string, string> = { new: "#3b82f6", in_review: "#a855f7", in_progress: "#eab308", resolved: "#16a34a", rejected: "#64748b" };
 const STATUSES = ["new", "in_review", "in_progress", "resolved", "rejected"] as const;
 
+const STATUS_LABEL: Record<"kk" | "ru", Record<string, string>> = {
+  kk: { new: "Жаңа", in_review: "Қаралуда", in_progress: "Орындалуда", resolved: "Шешілді", rejected: "Қабылданбады" },
+  ru: { new: "Новый", in_review: "На рассмотрении", in_progress: "В работе", resolved: "Решено", rejected: "Отклонено" },
+};
+const SEVERITY_LABEL: Record<"kk" | "ru", Record<string, string>> = {
+  kk: { low: "Төмен", medium: "Орташа", high: "Жоғары", critical: "Аса қауіпті" },
+  ru: { low: "Низкая", medium: "Средняя", high: "Высокая", critical: "Критическая" },
+};
+const CATEGORY_LABEL: Record<"kk" | "ru", Record<string, string>> = {
+  kk: {
+    illegal_dump: "Заңсыз қоқыс үйіндісі",
+    oil_spill: "Мұнай төгілуі",
+    water_shortage: "Су тапшылығы",
+    air_pollution: "Ауаның ластануы",
+    radioactive: "Радиоактивті",
+    sea_pollution: "Каспий ластануы",
+    dead_wildlife: "Жануарлардың өлімі",
+    other: "Басқа",
+  },
+  ru: {
+    illegal_dump: "Несанкционированная свалка",
+    oil_spill: "Разлив нефти",
+    water_shortage: "Дефицит воды",
+    air_pollution: "Загрязнение воздуха",
+    radioactive: "Радиоактивное",
+    sea_pollution: "Загрязнение Каспия",
+    dead_wildlife: "Гибель животных",
+    other: "Другое",
+  },
+};
+
 function Dashboard() {
   const listFn = useServerFn(listReports);
   const updateFn = useServerFn(updateReportStatus);
@@ -25,6 +57,7 @@ function Dashboard() {
   const qc = useQueryClient();
   const { lang } = useLanguage();
   const L = lang === "kk";
+  const [selected, setSelected] = useState<any | null>(null);
 
   const { data = [] } = useQuery({ queryKey: ["reports"], queryFn: () => listFn() });
   const mut = useMutation({
@@ -142,25 +175,25 @@ function Dashboard() {
               </thead>
               <tbody>
                 {data.map((r: any) => (
-                  <tr key={r.id} className="border-b border-foreground/5 hover:bg-secondary/40">
+                  <tr key={r.id} onClick={() => setSelected(r)} className="border-b border-foreground/5 hover:bg-secondary/40 cursor-pointer">
                     <td className="px-6 py-3">
                       <p className="font-semibold leading-tight">{r.title}</p>
-                      <p className="text-xs text-foreground/50 mt-0.5">{r.category}</p>
+                      <p className="text-xs text-foreground/50 mt-0.5">{CATEGORY_LABEL[lang][r.category] ?? r.category}</p>
                     </td>
                     <td className="px-3 py-3 text-foreground/70">{r.location_name}</td>
                     <td className="px-3 py-3">
-                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white" style={{ background: SEVERITY_COLOR[r.severity] }}>{r.severity}</span>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white" style={{ background: SEVERITY_COLOR[r.severity] }}>{SEVERITY_LABEL[lang][r.severity] ?? r.severity}</span>
                     </td>
                     <td className="px-3 py-3 max-w-xs">
                       {r.ai_recommendation ? (
                         <p className="text-xs text-foreground/70 line-clamp-2" title={r.ai_recommendation}>💡 {r.ai_recommendation}</p>
                       ) : <span className="text-xs text-foreground/30">—</span>}
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
                       <select value={r.status} disabled={mut.isPending}
                         onChange={(e) => mut.mutate({ id: r.id, status: e.target.value })}
                         className="text-xs font-bold px-2 py-1.5 rounded-lg border border-foreground/10 bg-background">
-                        {STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}
+                        {STATUSES.map((s) => (<option key={s} value={s}>{STATUS_LABEL[lang][s]}</option>))}
                       </select>
                     </td>
                   </tr>
@@ -170,6 +203,74 @@ function Dashboard() {
           </div>
         </Card>
       </div>
+
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selected && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white" style={{ background: SEVERITY_COLOR[selected.severity] }}>
+                    {SEVERITY_LABEL[lang][selected.severity] ?? selected.severity}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white" style={{ background: STATUS_COLOR[selected.status] }}>
+                    {STATUS_LABEL[lang][selected.status] ?? selected.status}
+                  </span>
+                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-secondary text-foreground/70">
+                    {CATEGORY_LABEL[lang][selected.category] ?? selected.category}
+                  </span>
+                </div>
+                <DialogTitle className="font-display text-2xl">{selected.title}</DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4 text-sm">
+                <div className="flex flex-wrap gap-4 text-xs text-foreground/60">
+                  <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {selected.location_name}</span>
+                  <span className="inline-flex items-center gap-1"><Calendar className="size-3.5" /> {new Date(selected.created_at).toLocaleString(lang === "kk" ? "kk-KZ" : "ru-RU")}</span>
+                  <span className="font-mono text-[11px]">{selected.lat.toFixed(4)}, {selected.lng.toFixed(4)}</span>
+                </div>
+
+                {selected.image_url && (
+                  <img src={selected.image_url} alt={selected.title} className="w-full rounded-2xl border border-foreground/10" />
+                )}
+
+                <div>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-foreground/50 mb-1">{L ? "Сипаттама" : "Описание"}</p>
+                  <p className="leading-relaxed whitespace-pre-wrap">{selected.description}</p>
+                </div>
+
+                {selected.ai_summary && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4">
+                    <p className="text-[10px] uppercase font-bold tracking-wider text-primary mb-1 inline-flex items-center gap-1"><Sparkles className="size-3" /> {L ? "AI түйін" : "AI резюме"}</p>
+                    <p className="leading-relaxed">{selected.ai_summary}</p>
+                  </div>
+                )}
+
+                {selected.ai_recommendation && (
+                  <div className="bg-accent/10 border border-accent/30 rounded-2xl p-4">
+                    <p className="text-[10px] uppercase font-bold tracking-wider text-foreground/70 mb-1">💡 {L ? "AI ұсынысы" : "Рекомендация AI"}</p>
+                    <p className="leading-relaxed">{selected.ai_recommendation}</p>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-foreground/50 mb-2">{L ? "Мәртебесін өзгерту" : "Изменить статус"}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {STATUSES.map((s) => (
+                      <button key={s} disabled={mut.isPending}
+                        onClick={() => mut.mutate({ id: selected.id, status: s }, { onSuccess: () => setSelected({ ...selected, status: s }) })}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${selected.status === s ? "text-white border-transparent" : "border-foreground/10 hover:bg-secondary"}`}
+                        style={selected.status === s ? { background: STATUS_COLOR[s] } : {}}>
+                        {STATUS_LABEL[lang][s]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
