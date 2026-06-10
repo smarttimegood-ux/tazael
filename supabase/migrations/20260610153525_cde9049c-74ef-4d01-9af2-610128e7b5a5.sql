@@ -1,0 +1,1 @@
+ALTER TABLE public.eco_reports ADD COLUMN image_url TEXT;
