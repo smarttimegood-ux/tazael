@@ -68,12 +68,6 @@ function Index() {
         </div>
         <div className="relative">
           <img src={heroImg} alt="Mangystau" width={1024} height={1024} className="w-full aspect-square object-cover rounded-[40px]" />
-          <div className="absolute -bottom-6 -left-6 bg-background p-5 rounded-3xl shadow-2xl border border-foreground/5 max-w-[280px]">
-            <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary" />
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">AI Eco-Advisor</p>
-            </div>
-          </div>
           <div className="absolute -top-4 -right-4 bg-foreground text-background px-4 py-3 rounded-2xl shadow-xl">
             <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{L ? "Тірі деректер" : "Live данные"}</p>
             <p className="font-display font-bold text-lg">8 {L ? "белсенді репорт" : "активных репортов"}</p>
