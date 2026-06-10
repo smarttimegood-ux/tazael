@@ -58,6 +58,7 @@ function Dashboard() {
   const { lang } = useLanguage();
   const L = lang === "kk";
   const [selected, setSelected] = useState<any | null>(null);
+  const [cityFilter, setCityFilter] = useState<string>("all");
 
   const { data = [] } = useQuery({ queryKey: ["reports"], queryFn: () => listFn() });
   const mut = useMutation({
@@ -88,6 +89,32 @@ function Dashboard() {
     data.forEach((r: any) => { m[r.status] = (m[r.status] ?? 0) + 1; });
     return Object.entries(m).map(([status, count]) => ({ status, count }));
   }, [data]);
+
+  // City detection from location_name (e.g. "Ақтау, 7 мкр" -> "Ақтау")
+  function detectCity(loc: string): string {
+    const s = (loc ?? "").toLowerCase();
+    if (s.includes("жаңаөзен") || s.includes("жанаозен") || s.includes("zhanaozen")) return "Жаңаөзен";
+    if (s.includes("ақтау") || s.includes("актау") || s.includes("aktau")) return "Ақтау";
+    if (s.includes("бейнеу")) return "Бейнеу";
+    if (s.includes("форт") || s.includes("шевченко")) return "Форт-Шевченко";
+    if (s.includes("құрық") || s.includes("курык")) return "Құрық";
+    if (s.includes("шетпе")) return "Шетпе";
+    return L ? "Басқа" : "Другое";
+  }
+
+  const byCity = useMemo(() => {
+    const m: Record<string, number> = {};
+    data.forEach((r: any) => {
+      const c = detectCity(r.location_name);
+      m[c] = (m[c] ?? 0) + 1;
+    });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+  }, [data, lang]);
+
+  const filteredReports = useMemo(() => {
+    if (cityFilter === "all") return data;
+    return data.filter((r: any) => detectCity(r.location_name) === cityFilter);
+  }, [data, cityFilter, lang]);
 
   async function ask() {
     if (!question.trim()) return;
@@ -161,7 +188,17 @@ function Dashboard() {
         </div>
 
         {/* Reports table */}
-        <Card title={L ? "Барлық репорттар" : "Все репорты"}>
+        <div className="mb-4">
+          <p className="text-[10px] uppercase font-bold tracking-widest text-foreground/50 mb-3">{L ? "Қала бойынша сүзгі" : "Фильтр по городу"}</p>
+          <div className="flex flex-wrap gap-2">
+            <CityChip active={cityFilter === "all"} label={L ? "Барлығы" : "Все"} count={data.length} onClick={() => setCityFilter("all")} />
+            {byCity.map(([city, count]) => (
+              <CityChip key={city} active={cityFilter === city} label={city} count={count} onClick={() => setCityFilter(city)} />
+            ))}
+          </div>
+        </div>
+
+        <Card title={cityFilter === "all" ? (L ? "Барлық репорттар" : "Все репорты") : `${cityFilter} — ${L ? "репорттар" : "репорты"} (${filteredReports.length})`}>
           <div className="overflow-x-auto -mx-6">
             <table className="w-full text-sm">
               <thead className="text-xs uppercase text-foreground/50">
@@ -174,7 +211,10 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {data.map((r: any) => (
+                {filteredReports.length === 0 && (
+                  <tr><td colSpan={5} className="px-6 py-8 text-center text-foreground/40 text-xs">{L ? "Бұл қала бойынша репорт жоқ" : "Нет репортов по этому городу"}</td></tr>
+                )}
+                {filteredReports.map((r: any) => (
                   <tr key={r.id} onClick={() => setSelected(r)} className="border-b border-foreground/5 hover:bg-secondary/40 cursor-pointer">
                     <td className="px-6 py-3">
                       <p className="font-semibold leading-tight">{r.title}</p>
@@ -291,5 +331,21 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       <h3 className="font-display font-bold text-sm uppercase tracking-wider text-foreground/60 mb-4">{title}</h3>
       {children}
     </div>
+  );
+}
+
+function CityChip({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-all ${
+        active
+          ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+          : "bg-background border-foreground/10 hover:border-primary/40 hover:bg-secondary"
+      }`}
+    >
+      <span>{label}</span>
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${active ? "bg-primary-foreground/20" : "bg-secondary text-foreground/60"}`}>{count}</span>
+    </button>
   );
 }
