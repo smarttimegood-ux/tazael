@@ -3,10 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { MangystauNav } from "@/components/MangystauNav";
-import { listReports, updateReportStatus, askEcoAdvisor } from "@/lib/reports.functions";
+import { listReports, updateReportStatus, askEcoAdvisor, deleteReport } from "@/lib/reports.functions";
 import { useLanguage } from "@/context/LanguageContext";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar } from "lucide-react";
+import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/dashboard")({
@@ -54,6 +54,7 @@ function Dashboard() {
   const listFn = useServerFn(listReports);
   const updateFn = useServerFn(updateReportStatus);
   const askFn = useServerFn(askEcoAdvisor);
+  const deleteFn = useServerFn(deleteReport);
   const qc = useQueryClient();
   const { lang } = useLanguage();
   const L = lang === "kk";
@@ -64,6 +65,13 @@ function Dashboard() {
   const mut = useMutation({
     mutationFn: (vars: { id: string; status: any }) => updateFn({ data: vars }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["reports"] }),
+  });
+  const delMut = useMutation({
+    mutationFn: (id: string) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["reports"] });
+      setSelected(null);
+    },
   });
 
   const [question, setQuestion] = useState("");
@@ -81,14 +89,14 @@ function Dashboard() {
   const byCategory = useMemo(() => {
     const m: Record<string, number> = {};
     data.forEach((r: any) => { m[r.category] = (m[r.category] ?? 0) + 1; });
-    return Object.entries(m).map(([category, count]) => ({ category, count }));
-  }, [data]);
+    return Object.entries(m).map(([category, count]) => ({ category, label: CATEGORY_LABEL[lang][category] ?? category, count }));
+  }, [data, lang]);
 
   const byStatus = useMemo(() => {
     const m: Record<string, number> = {};
     data.forEach((r: any) => { m[r.status] = (m[r.status] ?? 0) + 1; });
-    return Object.entries(m).map(([status, count]) => ({ status, count }));
-  }, [data]);
+    return Object.entries(m).map(([status, count]) => ({ status, label: STATUS_LABEL[lang][status] ?? status, count }));
+  }, [data, lang]);
 
   // City detection from location_name (e.g. "Ақтау, 7 мкр" -> "Ақтау")
   function detectCity(loc: string): string {
@@ -149,8 +157,8 @@ function Dashboard() {
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
           <Card title={L ? "Категориялар бойынша" : "По категориям"}>
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={byCategory} margin={{ top: 10, right: 10, left: -20, bottom: 30 }}>
-                <XAxis dataKey="category" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" interval={0} />
+              <BarChart data={byCategory} margin={{ top: 10, right: 10, left: -20, bottom: 60 }}>
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" interval={0} height={70} />
                 <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                 <Tooltip />
                 <Bar dataKey="count" fill="var(--primary)" radius={[6, 6, 0, 0]} />
@@ -160,7 +168,7 @@ function Dashboard() {
           <Card title={L ? "Мәртебе бойынша" : "По статусу"}>
             <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={byStatus} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={90} label={(e: any) => `${e.status}: ${e.count}`}>
+                <Pie data={byStatus} dataKey="count" nameKey="label" cx="50%" cy="50%" outerRadius={90} label={(e: any) => `${e.label}: ${e.count}`}>
                   {byStatus.map((s) => (<Cell key={s.status} fill={STATUS_COLOR[s.status] ?? "#64748b"} />))}
                 </Pie>
                 <Tooltip />
@@ -306,6 +314,23 @@ function Dashboard() {
                     ))}
                   </div>
                 </div>
+
+                {selected.status === "resolved" && (
+                  <div className="pt-4 border-t border-foreground/5">
+                    <button
+                      disabled={delMut.isPending}
+                      onClick={() => {
+                        if (confirm(L ? "Бұл шешілген репортты толық өшіруді растайсыз ба?" : "Удалить этот решённый репорт навсегда?")) {
+                          delMut.mutate(selected.id);
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {delMut.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                      {L ? "Шешілген репортты өшіру" : "Удалить решённый репорт"}
+                    </button>
+                  </div>
+                )}
               </div>
             </>
           )}

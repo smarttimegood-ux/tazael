@@ -127,6 +127,24 @@ export const updateReportStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const DeleteInput = z.object({ id: z.string().uuid() });
+export const deleteReport = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => DeleteInput.parse(d))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Only allow deleting resolved reports
+    const { data: row, error: selErr } = await supabaseAdmin
+      .from("eco_reports")
+      .select("status")
+      .eq("id", data.id)
+      .single();
+    if (selErr) throw new Error(selErr.message);
+    if (row?.status !== "resolved") throw new Error("Тек шешілген репорттарды өшіруге болады");
+    const { error } = await supabaseAdmin.from("eco_reports").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 const AskInput = z.object({ question: z.string().min(2).max(500) });
 export const askEcoAdvisor = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => AskInput.parse(d))
