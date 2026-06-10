@@ -184,7 +184,7 @@ function ReportPage() {
 
           <button disabled={loading} type="submit"
             className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.01] disabled:opacity-50 disabled:scale-100 transition-all inline-flex items-center justify-center gap-2">
-            {loading ? (<><Loader2 className="size-4 animate-spin" /> {L ? "AI талдауда..." : "ИИ анализирует..."}</>) : (<><Sparkles className="size-4" /> {L ? "Репорт жіберу + AI талдау" : "Отправить + AI анализ"}</>)}
+            {loading ? (<><Loader2 className="size-4 animate-spin" /> {L ? "AI талдауда..." : "ИИ анализирует..."}</>) : (L ? "Репорт жіберу + AI талдау" : "Отправить + AI анализ")}
           </button>
         </form>
       </div>
