@@ -24,6 +24,7 @@ const CreateInput = z.object({
   severity: z.enum(SEVERITIES).optional(),
   reporter_name: z.string().max(120).optional().nullable(),
   reporter_contact: z.string().max(200).optional().nullable(),
+  image_data: z.string().max(1_500_000).optional().nullable(),
 });
 
 export const createReport = createServerFn({ method: "POST" })
@@ -91,6 +92,7 @@ export const createReport = createServerFn({ method: "POST" })
         reporter_contact: data.reporter_contact ?? null,
         ai_summary: aiSummary,
         ai_recommendation: aiRecommendation,
+        image_url: data.image_data ?? null,
       })
       .select()
       .single();
