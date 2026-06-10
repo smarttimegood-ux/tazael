@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { MangystauNav } from "@/components/MangystauNav";
 import { createReport } from "@/lib/reports.functions";
 import { useLanguage } from "@/context/LanguageContext";
-import { Loader2, MapPin, Sparkles, CheckCircle2 } from "lucide-react";
+import { Loader2, MapPin, Sparkles, CheckCircle2, ImagePlus, X } from "lucide-react";
 
 export const Route = createFileRoute("/report")({
   head: () => ({ meta: [{ title: "Эко-репорт жіберу — TazaEl Mangystau" }, { name: "description", content: "Маңғыстаудағы экологиялық проблеманы 30 секундта тіркеңіз." }] }),
@@ -32,6 +32,8 @@ function ReportPage() {
   const [locIdx, setLocIdx] = useState(0);
   const [reporterName, setReporterName] = useState("");
   const [reporterContact, setReporterContact] = useState("");
+  const [imageData, setImageData] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +51,7 @@ function ReportPage() {
           lat: loc.lat, lng: loc.lng,
           reporter_name: reporterName || null,
           reporter_contact: reporterContact || null,
+          image_data: imageData,
         },
       });
       setSuccess(r);
@@ -56,6 +59,24 @@ function ReportPage() {
       setError(err?.message ?? "Қате");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleFile(file: File) {
+    setImageError(null);
+    if (!file.type.startsWith("image/")) {
+      setImageError(L ? "Тек сурет файлы" : "Только изображение");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setImageError(L ? "Файл тым үлкен (макс 15МБ)" : "Файл слишком большой (макс 15МБ)");
+      return;
+    }
+    try {
+      const dataUrl = await resizeImage(file, 1280, 0.72);
+      setImageData(dataUrl);
+    } catch {
+      setImageError(L ? "Сурет жүктелмеді" : "Не удалось загрузить");
     }
   }
 
@@ -69,6 +90,9 @@ function ReportPage() {
             <h1 className="font-display text-3xl font-bold mb-2">{L ? "Репорт қабылданды!" : "Репорт принят!"}</h1>
             <p className="text-foreground/60 mb-6">{L ? "AI талдады, әкімдік дашбордына түсті." : "ИИ обработал, отправлено в дашборд акимата."}</p>
 
+            {success.image_url && (
+              <img src={success.image_url} alt="" className="w-full rounded-2xl mb-5 max-h-80 object-cover" />
+            )}
             <div className="space-y-3 bg-secondary/40 rounded-2xl p-5 mb-6">
               <Row k={L ? "Тақырып" : "Заголовок"} v={success.title} />
               <Row k={L ? "Орын" : "Место"} v={success.location_name} />
