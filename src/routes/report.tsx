@@ -175,7 +175,7 @@ function ReportPage() {
                 <ImagePlus className="size-6 text-foreground/40" />
                 <span className="text-sm text-foreground/60">{L ? "Сурет таңдау немесе түсіру" : "Выбрать или снять фото"}</span>
                 <span className="text-xs text-foreground/40">{L ? "JPG / PNG · 15МБ дейін" : "JPG / PNG · до 15МБ"}</span>
-                <input type="file" accept="image/*" capture="environment" className="hidden"
+                <input type="file" accept="image/*" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
               </label>
             )}
