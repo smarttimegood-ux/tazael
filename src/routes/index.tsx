@@ -4,6 +4,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { MangystauNav } from "@/components/MangystauNav";
 import heroImg from "@/assets/hero.jpg";
 import { AlertTriangle, Droplets, Flame, Radiation, Waves, MapPin, Sparkles, ArrowRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { listReports } from "@/lib/reports.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,6 +23,15 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { lang } = useLanguage();
   const L = lang === "kk";
+  const listFn = useServerFn(listReports);
+  const { data: reports = [] } = useQuery({
+    queryKey: ["reports"],
+    queryFn: () => listFn(),
+    refetchInterval: 15000,
+  });
+  const activeCount = (reports as any[]).filter(
+    (r) => r.status !== "resolved" && r.status !== "rejected",
+  ).length;
 
   const problems = [
     { icon: AlertTriangle, title: L ? "Ашық ТҚҚ полигондары" : "Открытые полигоны ТБО", stat: L ? "ҚР ең желді өңірі" : "Самый ветреный регион РК", desc: L ? "Жабылмаған полигондардан қоқыс далаға ұшады." : "Мусор разносится ветром по степи." },
@@ -68,9 +80,14 @@ function Index() {
         </div>
         <div className="relative">
           <img src={heroImg} alt="Mangystau" width={1024} height={1024} className="w-full aspect-square object-cover rounded-[40px]" />
-          <div className="absolute -top-4 -right-4 bg-foreground text-background px-4 py-3 rounded-2xl shadow-xl">
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">{L ? "Тірі деректер" : "Live данные"}</p>
-            <p className="font-display font-bold text-lg">8 {L ? "белсенді репорт" : "активных репортов"}</p>
+          <div className="absolute -top-3 -right-3 sm:-top-4 sm:-right-4 bg-foreground text-background px-3 py-2 sm:px-4 sm:py-3 rounded-2xl shadow-xl max-w-[60%]">
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 flex items-center gap-1.5">
+              <span className="size-1.5 bg-primary rounded-full animate-pulse" />
+              {L ? "Тірі деректер" : "Live данные"}
+            </p>
+            <p className="font-display font-bold text-base sm:text-lg leading-tight">
+              {activeCount} {L ? "белсенді репорт" : "активных репортов"}
+            </p>
           </div>
         </div>
       </section>
