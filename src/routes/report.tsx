@@ -161,6 +161,27 @@ function ReportPage() {
 
           {error && <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-xl">{error}</p>}
 
+          <Field label={<span className="inline-flex items-center gap-1.5"><ImagePlus className="size-3.5" /> {L ? "Сурет (міндетті емес)" : "Фото (необяз.)"}</span>}>
+            {imageData ? (
+              <div className="relative">
+                <img src={imageData} alt="" className="w-full max-h-72 object-cover rounded-xl border border-foreground/10" />
+                <button type="button" onClick={() => setImageData(null)}
+                  className="absolute top-2 right-2 bg-background/90 backdrop-blur rounded-full p-1.5 border border-foreground/10 hover:bg-background">
+                  <X className="size-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 w-full border-2 border-dashed border-foreground/15 hover:border-primary/50 rounded-xl py-8 cursor-pointer transition-colors bg-secondary/30">
+                <ImagePlus className="size-6 text-foreground/40" />
+                <span className="text-sm text-foreground/60">{L ? "Сурет таңдау немесе түсіру" : "Выбрать или снять фото"}</span>
+                <span className="text-xs text-foreground/40">{L ? "JPG / PNG · 15МБ дейін" : "JPG / PNG · до 15МБ"}</span>
+                <input type="file" accept="image/*" capture="environment" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+              </label>
+            )}
+            {imageError && <p className="text-xs text-destructive mt-2">{imageError}</p>}
+          </Field>
+
           <button disabled={loading} type="submit"
             className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.01] disabled:opacity-50 disabled:scale-100 transition-all inline-flex items-center justify-center gap-2">
             {loading ? (<><Loader2 className="size-4 animate-spin" /> {L ? "AI талдауда..." : "ИИ анализирует..."}</>) : (<><Sparkles className="size-4" /> {L ? "Репорт жіберу + AI талдау" : "Отправить + AI анализ"}</>)}
