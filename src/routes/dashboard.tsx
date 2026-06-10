@@ -180,7 +180,6 @@ function Dashboard() {
         {/* AI Advisor */}
         <div className="bg-foreground text-background rounded-3xl p-6 md:p-8 mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="size-5 text-accent" />
             <h2 className="font-display text-xl font-bold">{L ? "AI Эко-кеңесші" : "AI Эко-советник"}</h2>
           </div>
           <p className="text-sm text-background/60 mb-4">{L ? "Маңғыстаудың экологиясы туралы кез-келген сұрақ қойыңыз. Lovable AI жауап береді." : "Задайте любой вопрос об экологии Мангистау."}</p>
@@ -189,7 +188,7 @@ function Dashboard() {
               placeholder={L ? "мыс. Қошқар-Атаны қалай оқшаулауға болады?" : "напр. Как изолировать Кошкар-Ату?"}
               className="flex-1 bg-background/10 border border-background/20 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none placeholder:text-background/40" />
             <button onClick={ask} disabled={asking || !question.trim()} className="bg-accent text-primary px-6 py-3 rounded-xl font-bold disabled:opacity-50 inline-flex items-center gap-2 justify-center">
-              {asking ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />} {L ? "Сұрау" : "Спросить"}
+              {asking && <Loader2 className="size-4 animate-spin" />} {L ? "Сұрау" : "Спросить"}
             </button>
           </div>
           {answer && <div className="mt-4 bg-background/10 border border-background/20 rounded-2xl p-4 text-sm leading-relaxed whitespace-pre-wrap">{answer}</div>}
