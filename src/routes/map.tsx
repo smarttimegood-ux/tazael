@@ -8,6 +8,7 @@ import { listReports } from "@/lib/reports.functions";
 import { useLanguage } from "@/context/LanguageContext";
 
 export const Route = createFileRoute("/map")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Эко-карта Маңғыстау — TazaEl" },

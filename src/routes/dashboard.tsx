@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, 
 import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
+  ssr: false,
   head: () => ({ meta: [{ title: "Әкімдік дашборды — TazaEl Mangystau" }] }),
   component: Dashboard,
 });
@@ -92,7 +93,7 @@ function Dashboard() {
                 <XAxis dataKey="category" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" interval={0} />
                 <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" fill="var(--primary)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </Card>
