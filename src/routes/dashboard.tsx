@@ -182,7 +182,7 @@ function Dashboard() {
           <div className="flex items-center gap-2 mb-3">
             <h2 className="font-display text-xl font-bold">{L ? "AI Эко-кеңесші" : "AI Эко-советник"}</h2>
           </div>
-          <p className="text-sm text-background/60 mb-4">{L ? "Маңғыстаудың экологиясы туралы кез-келген сұрақ қойыңыз. Lovable AI жауап береді." : "Задайте любой вопрос об экологии Мангистау."}</p>
+          <p className="text-sm text-background/60 mb-4">{L ? "Маңғыстаудың экологиясы туралы кез-келген сұрақ қойыңыз. TazaEl AI жауап береді." : "Задайте любой вопрос об экологии Мангистау. TazaEl AI ответит."}</p>
           <div className="flex gap-2 flex-col sm:flex-row">
             <input value={question} onChange={(e) => setQuestion(e.target.value)}
               placeholder={L ? "мыс. Қошқар-Атаны қалай оқшаулауға болады?" : "напр. Как изолировать Кошкар-Ату?"}
