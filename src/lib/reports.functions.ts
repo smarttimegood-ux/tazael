@@ -104,7 +104,7 @@ export const listReports = createServerFn({ method: "GET" }).handler(async () =>
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("eco_reports")
-    .select("id,category,severity,status,title,description,location_name,lat,lng,ai_summary,ai_recommendation,created_at,updated_at")
+    .select("id,category,severity,status,title,description,location_name,lat,lng,ai_summary,ai_recommendation,image_url,created_at,updated_at")
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
