@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAdmin } from "@/lib/admin.functions";
 
 const CATEGORIES = [
   "illegal_dump",
@@ -116,8 +118,10 @@ const StatusInput = z.object({
   status: z.enum(STATUSES),
 });
 export const updateReportStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => StatusInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("eco_reports")
@@ -129,8 +133,10 @@ export const updateReportStatus = createServerFn({ method: "POST" })
 
 const DeleteInput = z.object({ id: z.string().uuid() });
 export const deleteReport = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => DeleteInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Only allow deleting resolved reports
     const { data: row, error: selErr } = await supabaseAdmin
@@ -147,8 +153,10 @@ export const deleteReport = createServerFn({ method: "POST" })
 
 const AskInput = z.object({ question: z.string().min(2).max(500) });
 export const askEcoAdvisor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => AskInput.parse(d))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("AI key жоқ");
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
