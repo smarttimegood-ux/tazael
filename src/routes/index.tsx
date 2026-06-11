@@ -97,7 +97,6 @@ function Index() {
         <div className="max-w-7xl mx-auto">
           <div className="mb-12 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">{L ? "Кейс контексі" : "Контекст кейса"}</p>
               <h2 className="font-display text-3xl md:text-5xl font-bold tracking-tight max-w-2xl">{L ? "Маңғыстау — Қазақстанның экологиялық осал өңірі." : "Мангистау — экологически уязвимый регион РК."}</h2>
             </div>
             <p className="text-foreground/60 max-w-md">{L ? "Шешімді алты негізгі мәселе айналасында құрдық. Әр бағыт — нақты дерек, нақты әрекет." : "Решение построено вокруг шести проблем. Каждое направление — конкретные данные и действие."}</p>
