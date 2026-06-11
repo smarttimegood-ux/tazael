@@ -91,6 +91,13 @@ function ReportPage() {
     }
   }
 
+  const sevLabel = success ? ({
+    low: L ? "Төмен" : "Низкая",
+    medium: L ? "Орташа" : "Средняя",
+    high: L ? "Жоғары" : "Высокая",
+    critical: L ? "Аса қауіпті" : "Критическая",
+  } as Record<string, string>)[success.severity] ?? success.severity : "";
+
   if (success) {
     return (
       <div className="min-h-screen bg-background">
@@ -104,12 +111,6 @@ function ReportPage() {
             {success.image_url && (
               <img src={success.image_url} alt="" className="w-full rounded-2xl mb-5 max-h-80 object-cover" />
             )}
-            const sevLabel = ({
-              low: L ? "Төмен" : "Низкая",
-              medium: L ? "Орташа" : "Средняя",
-              high: L ? "Жоғары" : "Высокая",
-              critical: L ? "Аса қауіпті" : "Критическая",
-            } as Record<string, string>)[success.severity] ?? success.severity;
             <div className="space-y-3 bg-secondary/40 rounded-2xl p-5 mb-6">
               <Row k={L ? "Тақырып" : "Заголовок"} v={success.title} />
               <Row k={L ? "Орын" : "Место"} v={success.location_name} />
