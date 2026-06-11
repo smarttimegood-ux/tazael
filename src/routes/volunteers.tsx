@@ -1,9 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { MangystauNav } from "@/components/MangystauNav";
 import { useLanguage } from "@/context/LanguageContext";
 import { Users, Leaf, Waves, Trash2, Sprout, HandHeart, X, ArrowRight, CheckCircle2, Calendar, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  listVolunteerStats,
+  listMyMemberships,
+  joinGroup,
+  leaveGroup,
+  createDonation,
+} from "@/lib/volunteers.functions";
 
 export const Route = createFileRoute("/volunteers")({
   head: () => ({
@@ -188,25 +198,90 @@ const fmtKZT = (n: number) => new Intl.NumberFormat("ru-RU").format(n) + " ₸";
 function VolunteersPage() {
   const { lang } = useLanguage();
   const L = lang === "kk";
-  const [joined, setJoined] = useState<Record<string, boolean>>({});
   const [openGroup, setOpenGroup] = useState<Group | null>(null);
   const [openProject, setOpenProject] = useState<Project | null>(null);
-  const [funds, setFunds] = useState<Fund[]>(INITIAL_FUNDS);
   const [donateFund, setDonateFund] = useState<Fund | null>(null);
   const [donateAmount, setDonateAmount] = useState<string>("2000");
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSignedIn(!!s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
-  const join = (g: Group) => {
-    setJoined((s) => ({ ...s, [g.id]: true }));
-    toast.success(L ? `«${g.name.kk}» тобына қосылдыңыз!` : `Вы вступили в «${g.name.ru}»!`);
+  const statsFn = useServerFn(listVolunteerStats);
+  const myFn = useServerFn(listMyMemberships);
+  const joinFn = useServerFn(joinGroup);
+  const leaveFn = useServerFn(leaveGroup);
+  const donateFnSrv = useServerFn(createDonation);
+
+  const statsQ = useQuery({
+    queryKey: ["volunteer-stats"],
+    queryFn: () => statsFn(),
+  });
+  const myQ = useQuery({
+    queryKey: ["my-memberships", signedIn],
+    queryFn: () => myFn(),
+    enabled: signedIn,
+  });
+
+  const groupCount = (id: string, base: number) => base + (statsQ.data?.groupCounts?.[id] ?? 0);
+  const fundRaised = (id: string, base: number) => base + (statsQ.data?.fundRaised?.[id] ?? 0);
+  const isJoined = (id: string) => (myQ.data ?? []).includes(id);
+  const funds = INITIAL_FUNDS;
+
+  const joinMut = useMutation({
+    mutationFn: (g: Group) => joinFn({ data: { group_id: g.id } }),
+    onSuccess: (_d, g) => {
+      toast.success(L ? `«${g.name.kk}» тобына қосылдыңыз!` : `Вы вступили в «${g.name.ru}»!`);
+      qc.invalidateQueries({ queryKey: ["my-memberships"] });
+      qc.invalidateQueries({ queryKey: ["volunteer-stats"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Error"),
+  });
+  const leaveMut = useMutation({
+    mutationFn: (g: Group) => leaveFn({ data: { group_id: g.id } }),
+    onSuccess: (_d, g) => {
+      toast.success(L ? `«${g.name.kk}» тобынан шықтыңыз` : `Вы вышли из «${g.name.ru}»`);
+      qc.invalidateQueries({ queryKey: ["my-memberships"] });
+      qc.invalidateQueries({ queryKey: ["volunteer-stats"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Error"),
+  });
+  const donateMut = useMutation({
+    mutationFn: (v: { fund_id: string; amount: number }) => donateFnSrv({ data: v }),
+    onSuccess: (_d, v) => {
+      toast.success(L ? `Рахмет! ${fmtKZT(v.amount)} қайырымдылық жасалды.` : `Спасибо! Пожертвовано ${fmtKZT(v.amount)}.`);
+      qc.invalidateQueries({ queryKey: ["volunteer-stats"] });
+      setDonateFund(null);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Error"),
+  });
+
+  const requireAuth = () => {
+    if (signedIn) return true;
+    toast.error(L ? "Алдымен жүйеге кіріңіз" : "Сначала войдите в систему");
+    navigate({ to: "/auth" });
+    return false;
   };
 
-  const donate = () => {
+  const handleJoin = (g: Group) => {
+    if (!requireAuth()) return;
+    if (isJoined(g.id)) leaveMut.mutate(g);
+    else joinMut.mutate(g);
+  };
+
+  const handleDonate = () => {
     if (!donateFund) return;
+    if (!requireAuth()) return;
     const amt = Math.max(0, parseInt(donateAmount.replace(/\D/g, ""), 10) || 0);
-    if (!amt) return;
-    setFunds((arr) => arr.map((f) => (f.id === donateFund.id ? { ...f, raised: Math.min(f.target, f.raised + amt) } : f)));
-    toast.success(L ? `Рахмет! ${fmtKZT(amt)} қайырымдылық жасалды.` : `Спасибо! Пожертвовано ${fmtKZT(amt)}.`);
-    setDonateFund(null);
+    if (!amt) {
+      toast.error(L ? "Сома қате" : "Неверная сумма");
+      return;
+    }
+    donateMut.mutate({ fund_id: donateFund.id, amount: amt });
   };
 
   return (
@@ -257,20 +332,20 @@ function VolunteersPage() {
                     {g.participants.slice(0, 5).map((p, i) => (
                       <div key={i} className="size-7 rounded-full bg-primary/15 border-2 border-background grid place-items-center text-[11px] font-bold text-primary">{p}</div>
                     ))}
-                    <div className="size-7 rounded-full bg-foreground text-background border-2 border-background grid place-items-center text-[10px] font-bold">+{g.members - 5}</div>
+                    <div className="size-7 rounded-full bg-foreground text-background border-2 border-background grid place-items-center text-[10px] font-bold">+{Math.max(0, groupCount(g.id, g.members) - 5)}</div>
                   </div>
-                  <span className="text-xs text-foreground/50">{g.members} {L ? "мүше" : "чел."}</span>
+                  <span className="text-xs text-foreground/50">{groupCount(g.id, g.members)} {L ? "мүше" : "чел."}</span>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setOpenGroup(g)} className="flex-1 border border-foreground/10 rounded-xl py-2.5 text-sm font-semibold hover:bg-secondary transition-colors">
                     {L ? "Толығырақ" : "Подробнее"}
                   </button>
                   <button
-                    onClick={() => join(g)}
-                    disabled={joined[g.id]}
-                    className="flex-1 bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-bold hover:opacity-90 transition-opacity disabled:bg-foreground/10 disabled:text-foreground/50"
+                    onClick={() => handleJoin(g)}
+                    disabled={joinMut.isPending || leaveMut.isPending}
+                    className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-60 ${isJoined(g.id) ? "bg-secondary text-foreground border border-foreground/10" : "bg-primary text-primary-foreground"}`}
                   >
-                    {joined[g.id] ? (L ? "Қосылдыңыз ✓" : "Вы в группе ✓") : (L ? "Қосылу" : "Вступить")}
+                    {isJoined(g.id) ? (L ? "Шығу" : "Выйти") : (L ? "Қосылу" : "Вступить")}
                   </button>
                 </div>
               </div>
@@ -320,7 +395,8 @@ function VolunteersPage() {
 
         <div className="grid md:grid-cols-2 gap-5">
           {funds.map((f) => {
-            const pct = Math.min(100, Math.round((f.raised / f.target) * 100));
+            const raisedTotal = Math.min(f.target, fundRaised(f.id, f.raised));
+            const pct = Math.min(100, Math.round((raisedTotal / f.target) * 100));
             return (
               <div key={f.id} className="bg-background border border-foreground/10 rounded-3xl p-6 flex flex-col">
                 <div className="flex items-start gap-4 mb-4">
@@ -336,7 +412,7 @@ function VolunteersPage() {
                     <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="flex justify-between mt-2 text-xs">
-                    <span className="font-bold text-foreground">{fmtKZT(f.raised)}</span>
+                    <span className="font-bold text-foreground">{fmtKZT(raisedTotal)}</span>
                     <span className="text-foreground/50">{L ? "мақсат" : "цель"}: {fmtKZT(f.target)}</span>
                   </div>
                   <p className="text-[11px] text-primary font-bold mt-1">{pct}% {L ? "жиналды" : "собрано"}</p>
@@ -363,7 +439,7 @@ function VolunteersPage() {
             </div>
             <div className="flex-1">
               <h3 className="font-display text-2xl font-bold">{openGroup.name[lang]}</h3>
-              <p className="text-sm text-foreground/60">{openGroup.city[lang]} · {openGroup.members} {L ? "мүше" : "участников"}</p>
+              <p className="text-sm text-foreground/60">{openGroup.city[lang]} · {groupCount(openGroup.id, openGroup.members)} {L ? "мүше" : "участников"}</p>
             </div>
           </div>
           <p className="text-foreground/70 leading-relaxed mb-5">{openGroup.goal[lang]}</p>
@@ -373,7 +449,7 @@ function VolunteersPage() {
               {openGroup.participants.map((p, i) => (
                 <div key={i} className="size-9 rounded-full bg-primary/10 grid place-items-center text-sm font-bold text-primary">{p}</div>
               ))}
-              <div className="size-9 rounded-full bg-foreground text-background grid place-items-center text-xs font-bold">+{openGroup.members - openGroup.participants.length}</div>
+              <div className="size-9 rounded-full bg-foreground text-background grid place-items-center text-xs font-bold">+{Math.max(0, groupCount(openGroup.id, openGroup.members) - openGroup.participants.length)}</div>
             </div>
           </div>
           <div className="mb-6">
@@ -388,11 +464,11 @@ function VolunteersPage() {
             </ul>
           </div>
           <button
-            onClick={() => { join(openGroup); setOpenGroup(null); }}
-            disabled={joined[openGroup.id]}
-            className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 font-bold hover:opacity-90 disabled:bg-foreground/10 disabled:text-foreground/50"
+            onClick={() => { handleJoin(openGroup); setOpenGroup(null); }}
+            disabled={joinMut.isPending || leaveMut.isPending}
+            className={`w-full rounded-2xl py-3.5 font-bold transition-opacity hover:opacity-90 disabled:opacity-60 ${isJoined(openGroup.id) ? "bg-secondary text-foreground border border-foreground/10" : "bg-primary text-primary-foreground"}`}
           >
-            {joined[openGroup.id] ? (L ? "Сіз бұл топтасыз ✓" : "Вы уже в группе ✓") : (L ? "Топқа қосылу" : "Вступить в группу")}
+            {isJoined(openGroup.id) ? (L ? "Топтан шығу" : "Выйти из группы") : (L ? "Топқа қосылу" : "Вступить в группу")}
           </button>
         </Modal>
       )}
@@ -460,11 +536,11 @@ function VolunteersPage() {
               </button>
             ))}
           </div>
-          <button onClick={donate} className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 font-bold hover:opacity-90 inline-flex items-center justify-center gap-2">
-            <HandHeart className="size-4" /> {L ? "Қолдау" : "Поддержать"}
+          <button onClick={handleDonate} disabled={donateMut.isPending} className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 font-bold hover:opacity-90 disabled:opacity-60 inline-flex items-center justify-center gap-2">
+            <HandHeart className="size-4" /> {donateMut.isPending ? (L ? "Жіберілуде…" : "Отправка…") : (L ? "Қолдау" : "Поддержать")}
           </button>
           <p className="text-[11px] text-foreground/40 text-center mt-3">
-            {L ? "Демо режим: нақты төлем өңделмейді." : "Демо-режим: реальная оплата не выполняется."}
+            {L ? "Демо режим: нақты төлем өңделмейді, бірақ жарна тіркеледі." : "Демо-режим: реальная оплата не выполняется, но взнос фиксируется."}
           </p>
         </Modal>
       )}
