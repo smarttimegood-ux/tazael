@@ -79,7 +79,7 @@ export function EcoMap({ points, height = 520, center = [43.85, 51.5], zoom = 8,
     return () => {
       canceled = true;
     };
-  }, [points, center, zoom]);
+  }, [points, center, zoom, lang]);
 
   useEffect(() => {
     return () => {
