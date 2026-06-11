@@ -304,6 +304,10 @@ function Dashboard() {
             </table>
           </div>
         </Card>
+
+        <div className="mt-8">
+          <StaffManager />
+        </div>
       </div>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
