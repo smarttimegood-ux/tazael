@@ -138,6 +138,10 @@ const translations: Record<Lang, Record<string, string>> = {
     lang_kk: "Қазақша",
     lang_ru: "Русский",
     xp: "1,240 XP",
+    sev_low: "Низкая",
+    sev_medium: "Средняя",
+    sev_high: "Высокая",
+    sev_critical: "Критическая",
   },
 };
 
