@@ -26,7 +26,14 @@ const CreateInput = z.object({
   severity: z.enum(SEVERITIES).optional(),
   reporter_name: z.string().max(120).optional().nullable(),
   reporter_contact: z.string().max(200).optional().nullable(),
-  image_data: z.string().max(1_500_000).optional().nullable(),
+  image_data: z
+    .string()
+    .max(1_500_000)
+    .refine((v) => /^data:image\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v), {
+      message: "image_data must be a base64 image data URL",
+    })
+    .optional()
+    .nullable(),
 });
 
 export const createReport = createServerFn({ method: "POST" })
