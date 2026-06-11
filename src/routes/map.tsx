@@ -68,7 +68,7 @@ function MapPage() {
 
         <div className="grid lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
-            <EcoMap points={points} height={620} />
+            <EcoMap points={points} height={620} lang={lang} />
             <Legend lang={lang} />
           </div>
           <div className="space-y-3 max-h-[680px] overflow-y-auto pr-1">
