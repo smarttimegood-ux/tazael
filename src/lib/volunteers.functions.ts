@@ -69,3 +69,36 @@ export const createDonation = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+const ProfileInput = z.object({
+  full_name: z.string().trim().min(2).max(120),
+  phone: z.string().trim().max(40).optional().nullable(),
+  city: z.string().trim().max(80).optional().nullable(),
+  about: z.string().trim().max(500).optional().nullable(),
+});
+
+export const getMyVolunteerProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("volunteer_profiles")
+      .select("id, full_name, phone, city, about")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
+export const upsertVolunteerProfile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => ProfileInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
+      .from("volunteer_profiles")
+      .upsert(
+        { user_id: context.userId, ...data },
+        { onConflict: "user_id" }
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

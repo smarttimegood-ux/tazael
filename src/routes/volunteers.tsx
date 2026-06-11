@@ -13,6 +13,7 @@ import {
   joinGroup,
   leaveGroup,
   createDonation,
+  getMyVolunteerProfile,
 } from "@/lib/volunteers.functions";
 
 export const Route = createFileRoute("/volunteers")({
@@ -216,6 +217,7 @@ function VolunteersPage() {
   const joinFn = useServerFn(joinGroup);
   const leaveFn = useServerFn(leaveGroup);
   const donateFnSrv = useServerFn(createDonation);
+  const profileFn = useServerFn(getMyVolunteerProfile);
 
   const statsQ = useQuery({
     queryKey: ["volunteer-stats"],
@@ -224,6 +226,11 @@ function VolunteersPage() {
   const myQ = useQuery({
     queryKey: ["my-memberships", signedIn],
     queryFn: () => myFn(),
+    enabled: signedIn,
+  });
+  const profileQ = useQuery({
+    queryKey: ["my-volunteer-profile", signedIn],
+    queryFn: () => profileFn(),
     enabled: signedIn,
   });
 
@@ -261,10 +268,17 @@ function VolunteersPage() {
   });
 
   const requireAuth = () => {
-    if (signedIn) return true;
-    toast.error(L ? "Алдымен жүйеге кіріңіз" : "Сначала войдите в систему");
-    navigate({ to: "/auth" });
-    return false;
+    if (!signedIn) {
+      toast.error(L ? "Алдымен волонтер ретінде тіркеліңіз" : "Сначала зарегистрируйтесь как волонтёр");
+      navigate({ to: "/volunteer-auth" });
+      return false;
+    }
+    if (!profileQ.data) {
+      toast.error(L ? "Волонтер профилін толтырыңыз" : "Заполните профиль волонтёра");
+      navigate({ to: "/volunteer-auth" });
+      return false;
+    }
+    return true;
   };
 
   const handleJoin = (g: Group) => {
