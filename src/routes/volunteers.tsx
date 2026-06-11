@@ -332,20 +332,20 @@ function VolunteersPage() {
                     {g.participants.slice(0, 5).map((p, i) => (
                       <div key={i} className="size-7 rounded-full bg-primary/15 border-2 border-background grid place-items-center text-[11px] font-bold text-primary">{p}</div>
                     ))}
-                    <div className="size-7 rounded-full bg-foreground text-background border-2 border-background grid place-items-center text-[10px] font-bold">+{g.members - 5}</div>
+                    <div className="size-7 rounded-full bg-foreground text-background border-2 border-background grid place-items-center text-[10px] font-bold">+{Math.max(0, groupCount(g.id, g.members) - 5)}</div>
                   </div>
-                  <span className="text-xs text-foreground/50">{g.members} {L ? "мүше" : "чел."}</span>
+                  <span className="text-xs text-foreground/50">{groupCount(g.id, g.members)} {L ? "мүше" : "чел."}</span>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setOpenGroup(g)} className="flex-1 border border-foreground/10 rounded-xl py-2.5 text-sm font-semibold hover:bg-secondary transition-colors">
                     {L ? "Толығырақ" : "Подробнее"}
                   </button>
                   <button
-                    onClick={() => join(g)}
-                    disabled={joined[g.id]}
-                    className="flex-1 bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-bold hover:opacity-90 transition-opacity disabled:bg-foreground/10 disabled:text-foreground/50"
+                    onClick={() => handleJoin(g)}
+                    disabled={joinMut.isPending || leaveMut.isPending}
+                    className={`flex-1 rounded-xl py-2.5 text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-60 ${isJoined(g.id) ? "bg-secondary text-foreground border border-foreground/10" : "bg-primary text-primary-foreground"}`}
                   >
-                    {joined[g.id] ? (L ? "Қосылдыңыз ✓" : "Вы в группе ✓") : (L ? "Қосылу" : "Вступить")}
+                    {isJoined(g.id) ? (L ? "Шығу" : "Выйти") : (L ? "Қосылу" : "Вступить")}
                   </button>
                 </div>
               </div>
