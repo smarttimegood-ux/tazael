@@ -104,11 +104,17 @@ function ReportPage() {
             {success.image_url && (
               <img src={success.image_url} alt="" className="w-full rounded-2xl mb-5 max-h-80 object-cover" />
             )}
+            const sevLabel = ({
+              low: L ? "Төмен" : "Низкая",
+              medium: L ? "Орташа" : "Средняя",
+              high: L ? "Жоғары" : "Высокая",
+              critical: L ? "Аса қауіпті" : "Критическая",
+            } as Record<string, string>)[success.severity] ?? success.severity;
             <div className="space-y-3 bg-secondary/40 rounded-2xl p-5 mb-6">
               <Row k={L ? "Тақырып" : "Заголовок"} v={success.title} />
               <Row k={L ? "Орын" : "Место"} v={success.location_name} />
               <Row k={L ? "Категория" : "Категория"} v={success.category} />
-              <Row k={L ? "Қауіптілік" : "Тяжесть"} v={success.severity} />
+              <Row k={L ? "Қауіптілік" : "Тяжесть"} v={sevLabel} />
               {success.ai_summary && (
                 <div className="pt-3 border-t border-foreground/10">
                   <div className="flex items-center gap-1.5 mb-1 text-xs text-primary font-bold uppercase tracking-wider"><Sparkles className="size-3" /> AI түйін</div>
