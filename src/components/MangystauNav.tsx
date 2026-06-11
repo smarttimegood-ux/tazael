@@ -1,12 +1,19 @@
 import { Link } from "@tanstack/react-router";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Menu, X, LogOut, LogIn } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export function MangystauNav() {
   const { lang, setLang } = useLanguage();
   const L = lang === "kk";
   const [open, setOpen] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSignedIn(!!s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
   const linkCls = "px-3 py-1.5 rounded-full hover:bg-secondary transition-colors";
   return (
     <nav className="sticky top-0 z-50 bg-background/85 backdrop-blur-md border-b border-foreground/5 px-4 md:px-6 py-3">
@@ -33,6 +40,16 @@ export function MangystauNav() {
         >
           {lang === "kk" ? "KZ" : "RU"}
         </button>
+        {signedIn ? (
+          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/"; }}
+            className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold bg-secondary px-3 py-1.5 rounded-full hover:bg-primary/10 transition-colors">
+            <LogOut className="size-3" /> {L ? "Шығу" : "Выйти"}
+          </button>
+        ) : (
+          <Link to="/auth" className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold bg-secondary px-3 py-1.5 rounded-full hover:bg-primary/10 transition-colors">
+            <LogIn className="size-3" /> {L ? "Кіру" : "Войти"}
+          </Link>
+        )}
         <Link to="/report" className="hidden sm:inline-flex bg-foreground text-background px-4 py-2 rounded-full text-sm font-semibold hover:bg-primary transition-all">
           {L ? "Репорт +" : "Сообщить +"}
         </Link>

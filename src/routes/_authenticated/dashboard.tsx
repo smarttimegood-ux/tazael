@@ -4,15 +4,17 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { MangystauNav } from "@/components/MangystauNav";
 import { listReports, updateReportStatus, askEcoAdvisor, deleteReport } from "@/lib/reports.functions";
+import { isCurrentUserAdmin, claimFirstAdmin } from "@/lib/admin.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar, Trash2, ShieldAlert, LogOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   ssr: false,
   head: () => ({ meta: [{ title: "Әкімдік дашборды — TazaEl Mangystau" }] }),
-  component: Dashboard,
+  component: DashboardGate,
 });
 
 const SEVERITY_COLOR: Record<string, string> = { low: "#16a34a", medium: "#eab308", high: "#f97316", critical: "#dc2626" };
@@ -49,6 +51,59 @@ const CATEGORY_LABEL: Record<"kk" | "ru", Record<string, string>> = {
     other: "Другое",
   },
 };
+
+function DashboardGate() {
+  const adminFn = useServerFn(isCurrentUserAdmin);
+  const claimFn = useServerFn(claimFirstAdmin);
+  const qcRoot = useQueryClient();
+  const adminQ = useQuery({ queryKey: ["isAdmin"], queryFn: () => adminFn(), retry: false });
+  const [claiming, setClaiming] = useState(false);
+
+  async function handleClaim() {
+    setClaiming(true);
+    try {
+      const r = await claimFn();
+      if (r.claimed) qcRoot.invalidateQueries({ queryKey: ["isAdmin"] });
+      else alert("Әкімші тағайындалған. Қолданушыңызға қолдағы әкімшіден рұқсат сұраңыз.");
+    } catch (e: any) {
+      alert(e?.message ?? "Қате");
+    } finally { setClaiming(false); }
+  }
+
+  if (adminQ.isLoading) {
+    return <div className="min-h-screen grid place-items-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
+  }
+  if (!adminQ.data?.isAdmin) {
+    return <AccessDenied onClaim={handleClaim} claiming={claiming} />;
+  }
+  return <Dashboard />;
+}
+
+function AccessDenied({ onClaim, claiming }: { onClaim: () => void; claiming: boolean }) {
+  return (
+    <div className="min-h-screen bg-secondary/30">
+      <MangystauNav />
+      <div className="max-w-md mx-auto px-4 py-20 text-center">
+        <div className="size-16 mx-auto rounded-2xl bg-red-50 text-red-600 grid place-items-center mb-4">
+          <ShieldAlert className="size-8" />
+        </div>
+        <h1 className="font-display text-2xl font-bold mb-2">Рұқсат жоқ</h1>
+        <p className="text-sm text-foreground/60 mb-6">
+          Сізде әкімдік панеліне кіруге рұқсат жоқ. Әкімшіден рұқсат сұраңыз немесе төмендегі түймемен бірінші әкімші болыңыз (тек ешбір әкімші болмаған жағдайда жұмыс істейді).
+        </p>
+        <button onClick={onClaim} disabled={claiming}
+          className="bg-foreground text-background px-6 py-3 rounded-xl font-bold inline-flex items-center gap-2 disabled:opacity-50">
+          {claiming && <Loader2 className="size-4 animate-spin" />}
+          Бірінші әкімші болу
+        </button>
+        <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}
+          className="block mx-auto mt-4 text-xs text-foreground/50 hover:text-primary inline-flex items-center gap-1">
+          <LogOut className="size-3" /> Шығу
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Dashboard() {
   const listFn = useServerFn(listReports);
