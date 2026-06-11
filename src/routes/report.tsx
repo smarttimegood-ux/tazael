@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MangystauNav } from "@/components/MangystauNav";
 import { createReport } from "@/lib/reports.functions";
 import { useLanguage } from "@/context/LanguageContext";
-import { Loader2, MapPin, Sparkles, CheckCircle2, ImagePlus, X, ClipboardList } from "lucide-react";
+import { Loader2, MapPin, Sparkles, CheckCircle2, ImagePlus, X, ClipboardList, LocateFixed } from "lucide-react";
 
 export const Route = createFileRoute("/report")({
   head: () => ({ meta: [{ title: "Эко-репорт жіберу — TazaEl Mangystau" }, { name: "description", content: "Маңғыстаудағы экологиялық проблеманы 30 секундта тіркеңіз." }] }),
@@ -32,6 +32,9 @@ function ReportPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [locIdx, setLocIdx] = useState(0);
+  const [geoLoc, setGeoLoc] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
   const [reporterName, setReporterName] = useState("");
   const [reporterContact, setReporterContact] = useState("");
   const [imageData, setImageData] = useState<string | null>(null);
@@ -45,7 +48,9 @@ function ReportPage() {
     setLoading(true);
     setError(null);
     try {
-      const loc = MANGYSTAU_LOCATIONS[locIdx];
+      const loc = geoLoc
+        ? { name: L ? "Менің геопозициям" : "Моя геопозиция", lat: geoLoc.lat, lng: geoLoc.lng }
+        : MANGYSTAU_LOCATIONS[locIdx];
       const r = await create({
         data: {
           title, description,
@@ -71,6 +76,30 @@ function ReportPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function useMyLocation() {
+    setGeoError(null);
+    if (!("geolocation" in navigator)) {
+      setGeoError(L ? "Браузер геолокацияны қолдамайды" : "Браузер не поддерживает геолокацию");
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy });
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoLoading(false);
+        setGeoError(
+          err.code === err.PERMISSION_DENIED
+            ? (L ? "Геолокацияға рұқсат берілмеді" : "Доступ к геолокации запрещён")
+            : (L ? "Орынды анықтау мүмкін болмады" : "Не удалось определить местоположение")
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   }
 
   async function handleFile(file: File) {
@@ -164,10 +193,27 @@ function ReportPage() {
               className="w-full bg-secondary/50 border border-foreground/10 rounded-xl px-4 py-3 text-sm focus:border-primary outline-none resize-none" />
           </Field>
           <Field label={<span className="inline-flex items-center gap-1.5"><MapPin className="size-3.5" /> {L ? "Орын" : "Место"}</span>}>
-            <select value={locIdx} onChange={(e) => setLocIdx(Number(e.target.value))}
-              className="w-full bg-secondary/50 border border-foreground/10 rounded-xl px-4 py-3 text-sm focus:border-primary outline-none">
-              {MANGYSTAU_LOCATIONS.map((l, i) => (<option key={l.name} value={i}>{l.name}</option>))}
-            </select>
+            <div className="space-y-2">
+              <button type="button" onClick={useMyLocation} disabled={geoLoading}
+                className="w-full inline-flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary/15 text-primary border border-primary/30 rounded-xl px-4 py-3 text-sm font-semibold disabled:opacity-50">
+                {geoLoading
+                  ? <><Loader2 className="size-4 animate-spin" /> {L ? "Анықталуда..." : "Определение..."}</>
+                  : <><LocateFixed className="size-4" /> {geoLoc ? (L ? "Менің геопозициям қолданылды" : "Используется моя геопозиция") : (L ? "Менің геолокациямды қолдану" : "Использовать мою геолокацию")}</>}
+              </button>
+              {geoLoc && (
+                <div className="flex items-center justify-between bg-secondary/40 rounded-xl px-4 py-2 text-xs">
+                  <span className="text-foreground/60 font-mono">{geoLoc.lat.toFixed(5)}, {geoLoc.lng.toFixed(5)}{geoLoc.accuracy ? ` · ±${Math.round(geoLoc.accuracy)}м` : ""}</span>
+                  <button type="button" onClick={() => setGeoLoc(null)} className="text-foreground/50 hover:text-foreground"><X className="size-3.5" /></button>
+                </div>
+              )}
+              {geoError && <p className="text-xs text-destructive">{geoError}</p>}
+              {!geoLoc && (
+                <select value={locIdx} onChange={(e) => setLocIdx(Number(e.target.value))}
+                  className="w-full bg-secondary/50 border border-foreground/10 rounded-xl px-4 py-3 text-sm focus:border-primary outline-none">
+                  {MANGYSTAU_LOCATIONS.map((l, i) => (<option key={l.name} value={i}>{l.name}</option>))}
+                </select>
+              )}
+            </div>
           </Field>
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label={L ? "Атыңыз (міндетті емес)" : "Имя (необяз.)"}>
