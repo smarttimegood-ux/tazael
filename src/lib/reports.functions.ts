@@ -113,6 +113,21 @@ export const listReports = createServerFn({ method: "GET" }).handler(async () =>
   return data;
 });
 
+const IdsInput = z.object({ ids: z.array(z.string().uuid()).max(100) });
+export const getReportsByIds = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => IdsInput.parse(d))
+  .handler(async ({ data }) => {
+    if (data.ids.length === 0) return [];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("eco_reports")
+      .select("id,title,category,severity,status,location_name,created_at,updated_at,ai_summary")
+      .in("id", data.ids)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return rows;
+  });
+
 const StatusInput = z.object({
   id: z.string().uuid(),
   status: z.enum(STATUSES),

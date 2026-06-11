@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { MangystauNav } from "@/components/MangystauNav";
 import { createReport } from "@/lib/reports.functions";
 import { useLanguage } from "@/context/LanguageContext";
-import { Loader2, MapPin, Sparkles, CheckCircle2, ImagePlus, X } from "lucide-react";
+import { Loader2, MapPin, Sparkles, CheckCircle2, ImagePlus, X, ClipboardList } from "lucide-react";
 
 export const Route = createFileRoute("/report")({
   head: () => ({ meta: [{ title: "Эко-репорт жіберу — TazaEl Mangystau" }, { name: "description", content: "Маңғыстаудағы экологиялық проблеманы 30 секундта тіркеңіз." }] }),
@@ -55,6 +55,13 @@ function ReportPage() {
         },
       });
       setSuccess(r);
+      try {
+        const KEY = "tazael_my_reports";
+        const prev: string[] = JSON.parse(localStorage.getItem(KEY) ?? "[]");
+        if (r?.id && !prev.includes(r.id)) {
+          localStorage.setItem(KEY, JSON.stringify([r.id, ...prev].slice(0, 100)));
+        }
+      } catch {}
     } catch (err: any) {
       setError(err?.message ?? "Қате");
     } finally {
@@ -116,6 +123,10 @@ function ReportPage() {
               <button onClick={() => navigate({ to: "/map" })} className="flex-1 bg-primary text-primary-foreground py-3 rounded-2xl font-bold">{L ? "Картадан көру" : "Открыть на карте"}</button>
               <button onClick={() => { setSuccess(null); setTitle(""); setDescription(""); }} className="px-5 py-3 rounded-2xl border border-foreground/10 font-semibold">{L ? "Тағы біреу" : "Ещё один"}</button>
             </div>
+            <button onClick={() => navigate({ to: "/my-reports" })}
+              className="mt-3 w-full inline-flex items-center justify-center gap-2 text-sm font-semibold text-primary hover:underline">
+              <ClipboardList className="size-4" /> {L ? "Менің репорттарымның күйі" : "Статус моих репортов"}
+            </button>
           </div>
         </div>
       </div>
