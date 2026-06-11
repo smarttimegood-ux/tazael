@@ -30,6 +30,7 @@ export function MangystauNav() {
           <Link to="/" className={linkCls} activeOptions={{ exact: true }} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Басты" : "Главная"}</Link>
           <Link to="/map" className={linkCls} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Эко-карта" : "Эко-карта"}</Link>
           <Link to="/report" className={linkCls} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Репорт жіберу" : "Сообщить"}</Link>
+          <Link to="/my-reports" className={linkCls} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Менің репорттарым" : "Мои репорты"}</Link>
           <Link to="/dashboard" className={linkCls} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Әкімдік дашборды" : "Дашборд"}</Link>
         </div>
       </div>
@@ -67,6 +68,7 @@ export function MangystauNav() {
           <Link to="/" onClick={() => setOpen(false)} className={linkCls} activeOptions={{ exact: true }} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Басты" : "Главная"}</Link>
           <Link to="/map" onClick={() => setOpen(false)} className={linkCls} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Эко-карта" : "Эко-карта"}</Link>
           <Link to="/report" onClick={() => setOpen(false)} className={linkCls} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Репорт жіберу" : "Сообщить"}</Link>
+          <Link to="/my-reports" onClick={() => setOpen(false)} className={linkCls} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Менің репорттарым" : "Мои репорты"}</Link>
           <Link to="/dashboard" onClick={() => setOpen(false)} className={linkCls} activeProps={{ className: "bg-secondary text-primary" }}>{L ? "Әкімдік дашборды" : "Дашборд"}</Link>
         </div>
       )}
