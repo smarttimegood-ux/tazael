@@ -107,6 +107,7 @@ function SeverityBadge({ sev }: { sev: string }) {
 
 function Legend({ lang }: { lang: "kk" | "ru" }) {
   const L = lang === "kk";
+  const { t } = useLanguage();
   const items = [
     { c: "#16a34a", l: "low" }, { c: "#eab308", l: "medium" }, { c: "#f97316", l: "high" }, { c: "#dc2626", l: "critical" },
   ];
@@ -115,7 +116,7 @@ function Legend({ lang }: { lang: "kk" | "ru" }) {
       <span className="font-semibold">{L ? "Қауіптілік:" : "Тяжесть:"}</span>
       {items.map((i) => (
         <span key={i.l} className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-full" style={{ background: i.c }} /> {i.l}
+          <span className="size-3 rounded-full" style={{ background: i.c }} /> {t("sev_" + i.l)}
         </span>
       ))}
     </div>
