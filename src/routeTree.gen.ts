@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VolunteersRouteImport } from './routes/volunteers'
+import { Route as VolunteerAuthRouteImport } from './routes/volunteer-auth'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as MyReportsRouteImport } from './routes/my-reports'
 import { Route as MapRouteImport } from './routes/map'
@@ -21,6 +22,11 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 const VolunteersRoute = VolunteersRouteImport.update({
   id: '/volunteers',
   path: '/volunteers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VolunteerAuthRoute = VolunteerAuthRouteImport.update({
+  id: '/volunteer-auth',
+  path: '/volunteer-auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportRoute = ReportRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/map': typeof MapRoute
   '/my-reports': typeof MyReportsRoute
   '/report': typeof ReportRoute
+  '/volunteer-auth': typeof VolunteerAuthRoute
   '/volunteers': typeof VolunteersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
 }
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/map': typeof MapRoute
   '/my-reports': typeof MyReportsRoute
   '/report': typeof ReportRoute
+  '/volunteer-auth': typeof VolunteerAuthRoute
   '/volunteers': typeof VolunteersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
 }
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/map': typeof MapRoute
   '/my-reports': typeof MyReportsRoute
   '/report': typeof ReportRoute
+  '/volunteer-auth': typeof VolunteerAuthRoute
   '/volunteers': typeof VolunteersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
 }
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/my-reports'
     | '/report'
+    | '/volunteer-auth'
     | '/volunteers'
     | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/my-reports'
     | '/report'
+    | '/volunteer-auth'
     | '/volunteers'
     | '/dashboard'
   id:
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/my-reports'
     | '/report'
+    | '/volunteer-auth'
     | '/volunteers'
     | '/_authenticated/dashboard'
   fileRoutesById: FileRoutesById
@@ -125,6 +137,7 @@ export interface RootRouteChildren {
   MapRoute: typeof MapRoute
   MyReportsRoute: typeof MyReportsRoute
   ReportRoute: typeof ReportRoute
+  VolunteerAuthRoute: typeof VolunteerAuthRoute
   VolunteersRoute: typeof VolunteersRoute
 }
 
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/volunteers'
       fullPath: '/volunteers'
       preLoaderRoute: typeof VolunteersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/volunteer-auth': {
+      id: '/volunteer-auth'
+      path: '/volunteer-auth'
+      fullPath: '/volunteer-auth'
+      preLoaderRoute: typeof VolunteerAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/report': {
@@ -207,8 +227,19 @@ const rootRouteChildren: RootRouteChildren = {
   MapRoute: MapRoute,
   MyReportsRoute: MyReportsRoute,
   ReportRoute: ReportRoute,
+  VolunteerAuthRoute: VolunteerAuthRoute,
   VolunteersRoute: VolunteersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
