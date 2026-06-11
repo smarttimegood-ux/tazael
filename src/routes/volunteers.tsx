@@ -198,25 +198,90 @@ const fmtKZT = (n: number) => new Intl.NumberFormat("ru-RU").format(n) + " ₸";
 function VolunteersPage() {
   const { lang } = useLanguage();
   const L = lang === "kk";
-  const [joined, setJoined] = useState<Record<string, boolean>>({});
   const [openGroup, setOpenGroup] = useState<Group | null>(null);
   const [openProject, setOpenProject] = useState<Project | null>(null);
-  const [funds, setFunds] = useState<Fund[]>(INITIAL_FUNDS);
   const [donateFund, setDonateFund] = useState<Fund | null>(null);
   const [donateAmount, setDonateAmount] = useState<string>("2000");
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSignedIn(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSignedIn(!!s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
-  const join = (g: Group) => {
-    setJoined((s) => ({ ...s, [g.id]: true }));
-    toast.success(L ? `«${g.name.kk}» тобына қосылдыңыз!` : `Вы вступили в «${g.name.ru}»!`);
+  const statsFn = useServerFn(listVolunteerStats);
+  const myFn = useServerFn(listMyMemberships);
+  const joinFn = useServerFn(joinGroup);
+  const leaveFn = useServerFn(leaveGroup);
+  const donateFnSrv = useServerFn(createDonation);
+
+  const statsQ = useQuery({
+    queryKey: ["volunteer-stats"],
+    queryFn: () => statsFn(),
+  });
+  const myQ = useQuery({
+    queryKey: ["my-memberships", signedIn],
+    queryFn: () => myFn(),
+    enabled: signedIn,
+  });
+
+  const groupCount = (id: string, base: number) => base + (statsQ.data?.groupCounts?.[id] ?? 0);
+  const fundRaised = (id: string, base: number) => base + (statsQ.data?.fundRaised?.[id] ?? 0);
+  const isJoined = (id: string) => (myQ.data ?? []).includes(id);
+  const funds = INITIAL_FUNDS;
+
+  const joinMut = useMutation({
+    mutationFn: (g: Group) => joinFn({ data: { group_id: g.id } }),
+    onSuccess: (_d, g) => {
+      toast.success(L ? `«${g.name.kk}» тобына қосылдыңыз!` : `Вы вступили в «${g.name.ru}»!`);
+      qc.invalidateQueries({ queryKey: ["my-memberships"] });
+      qc.invalidateQueries({ queryKey: ["volunteer-stats"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Error"),
+  });
+  const leaveMut = useMutation({
+    mutationFn: (g: Group) => leaveFn({ data: { group_id: g.id } }),
+    onSuccess: (_d, g) => {
+      toast.success(L ? `«${g.name.kk}» тобынан шықтыңыз` : `Вы вышли из «${g.name.ru}»`);
+      qc.invalidateQueries({ queryKey: ["my-memberships"] });
+      qc.invalidateQueries({ queryKey: ["volunteer-stats"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Error"),
+  });
+  const donateMut = useMutation({
+    mutationFn: (v: { fund_id: string; amount: number }) => donateFnSrv({ data: v }),
+    onSuccess: (_d, v) => {
+      toast.success(L ? `Рахмет! ${fmtKZT(v.amount)} қайырымдылық жасалды.` : `Спасибо! Пожертвовано ${fmtKZT(v.amount)}.`);
+      qc.invalidateQueries({ queryKey: ["volunteer-stats"] });
+      setDonateFund(null);
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Error"),
+  });
+
+  const requireAuth = () => {
+    if (signedIn) return true;
+    toast.error(L ? "Алдымен жүйеге кіріңіз" : "Сначала войдите в систему");
+    navigate({ to: "/auth" });
+    return false;
   };
 
-  const donate = () => {
+  const handleJoin = (g: Group) => {
+    if (!requireAuth()) return;
+    if (isJoined(g.id)) leaveMut.mutate(g);
+    else joinMut.mutate(g);
+  };
+
+  const handleDonate = () => {
     if (!donateFund) return;
+    if (!requireAuth()) return;
     const amt = Math.max(0, parseInt(donateAmount.replace(/\D/g, ""), 10) || 0);
-    if (!amt) return;
-    setFunds((arr) => arr.map((f) => (f.id === donateFund.id ? { ...f, raised: Math.min(f.target, f.raised + amt) } : f)));
-    toast.success(L ? `Рахмет! ${fmtKZT(amt)} қайырымдылық жасалды.` : `Спасибо! Пожертвовано ${fmtKZT(amt)}.`);
-    setDonateFund(null);
+    if (!amt) {
+      toast.error(L ? "Сома қате" : "Неверная сумма");
+      return;
+    }
+    donateMut.mutate({ fund_id: donateFund.id, amount: amt });
   };
 
   return (
