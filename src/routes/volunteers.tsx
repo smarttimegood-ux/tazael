@@ -535,11 +535,11 @@ function VolunteersPage() {
               </button>
             ))}
           </div>
-          <button onClick={donate} className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 font-bold hover:opacity-90 inline-flex items-center justify-center gap-2">
-            <HandHeart className="size-4" /> {L ? "Қолдау" : "Поддержать"}
+          <button onClick={handleDonate} disabled={donateMut.isPending} className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 font-bold hover:opacity-90 disabled:opacity-60 inline-flex items-center justify-center gap-2">
+            <HandHeart className="size-4" /> {donateMut.isPending ? (L ? "Жіберілуде…" : "Отправка…") : (L ? "Қолдау" : "Поддержать")}
           </button>
           <p className="text-[11px] text-foreground/40 text-center mt-3">
-            {L ? "Демо режим: нақты төлем өңделмейді." : "Демо-режим: реальная оплата не выполняется."}
+            {L ? "Демо режим: нақты төлем өңделмейді, бірақ жарна тіркеледі." : "Демо-режим: реальная оплата не выполняется, но взнос фиксируется."}
           </p>
         </Modal>
       )}
