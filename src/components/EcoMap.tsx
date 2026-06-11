@@ -18,11 +18,19 @@ const SEVERITY_COLOR: Record<string, string> = {
   critical: "#dc2626",
 };
 
-export function EcoMap({ points, height = 520, center = [43.85, 51.5], zoom = 8 }: {
+const SEVERITY_LABEL: Record<string, { kk: string; ru: string }> = {
+  low: { kk: "Төмен", ru: "Низкая" },
+  medium: { kk: "Орташа", ru: "Средняя" },
+  high: { kk: "Жоғары", ru: "Высокая" },
+  critical: { kk: "Аса қауіпті", ru: "Критическая" },
+};
+
+export function EcoMap({ points, height = 520, center = [43.85, 51.5], zoom = 8, lang = "kk" }: {
   points: MapPoint[];
   height?: number;
   center?: [number, number];
   zoom?: number;
+  lang?: "kk" | "ru";
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
@@ -60,8 +68,8 @@ export function EcoMap({ points, height = 520, center = [43.85, 51.5], zoom = 8 
             <div style="font-weight:700;margin-bottom:4px">${escapeHtml(p.title)}</div>
             <div style="font-size:12px;color:#64748b;margin-bottom:6px">${escapeHtml(p.location_name)}</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
-              <span style="background:${color};color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:600">${p.severity.toUpperCase()}</span>
-              <span style="background:#f1f5f9;color:#475569;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:600">${p.status}</span>
+              <span style="background:${color};color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:600">${escapeHtml((SEVERITY_LABEL[p.severity] ?? SEVERITY_LABEL.low)[lang]).toUpperCase()}</span>
+              <span style="background:#f1f5f9;color:#475569;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:600">${escapeHtml(p.status)}</span>
             </div>
           </div>`
         );
@@ -71,7 +79,7 @@ export function EcoMap({ points, height = 520, center = [43.85, 51.5], zoom = 8 
     return () => {
       canceled = true;
     };
-  }, [points, center, zoom]);
+  }, [points, center, zoom, lang]);
 
   useEffect(() => {
     return () => {

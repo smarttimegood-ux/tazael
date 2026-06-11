@@ -68,7 +68,7 @@ function MapPage() {
 
         <div className="grid lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
-            <EcoMap points={points} height={620} />
+            <EcoMap points={points} height={620} lang={lang} />
             <Legend lang={lang} />
           </div>
           <div className="space-y-3 max-h-[680px] overflow-y-auto pr-1">
@@ -95,17 +95,19 @@ function MapPage() {
 }
 
 function SeverityBadge({ sev }: { sev: string }) {
+  const { t } = useLanguage();
   const map: Record<string, string> = {
     low: "bg-green-100 text-green-800",
     medium: "bg-yellow-100 text-yellow-800",
     high: "bg-orange-100 text-orange-800",
     critical: "bg-red-100 text-red-800",
   };
-  return <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${map[sev] ?? "bg-gray-100 text-gray-800"}`}>{sev}</span>;
+  return <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${map[sev] ?? "bg-gray-100 text-gray-800"}`}>{t("sev_" + sev) ?? sev}</span>;
 }
 
 function Legend({ lang }: { lang: "kk" | "ru" }) {
   const L = lang === "kk";
+  const { t } = useLanguage();
   const items = [
     { c: "#16a34a", l: "low" }, { c: "#eab308", l: "medium" }, { c: "#f97316", l: "high" }, { c: "#dc2626", l: "critical" },
   ];
@@ -114,7 +116,7 @@ function Legend({ lang }: { lang: "kk" | "ru" }) {
       <span className="font-semibold">{L ? "Қауіптілік:" : "Тяжесть:"}</span>
       {items.map((i) => (
         <span key={i.l} className="inline-flex items-center gap-1.5">
-          <span className="size-3 rounded-full" style={{ background: i.c }} /> {i.l}
+          <span className="size-3 rounded-full" style={{ background: i.c }} /> {t("sev_" + i.l)}
         </span>
       ))}
     </div>

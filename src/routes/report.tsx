@@ -91,6 +91,13 @@ function ReportPage() {
     }
   }
 
+  const sevLabel = success ? ({
+    low: L ? "Төмен" : "Низкая",
+    medium: L ? "Орташа" : "Средняя",
+    high: L ? "Жоғары" : "Высокая",
+    critical: L ? "Аса қауіпті" : "Критическая",
+  } as Record<string, string>)[success.severity] ?? success.severity : "";
+
   if (success) {
     return (
       <div className="min-h-screen bg-background">
@@ -108,7 +115,7 @@ function ReportPage() {
               <Row k={L ? "Тақырып" : "Заголовок"} v={success.title} />
               <Row k={L ? "Орын" : "Место"} v={success.location_name} />
               <Row k={L ? "Категория" : "Категория"} v={success.category} />
-              <Row k={L ? "Қауіптілік" : "Тяжесть"} v={success.severity} />
+              <Row k={L ? "Қауіптілік" : "Тяжесть"} v={sevLabel} />
               {success.ai_summary && (
                 <div className="pt-3 border-t border-foreground/10">
                   <div className="flex items-center gap-1.5 mb-1 text-xs text-primary font-bold uppercase tracking-wider"><Sparkles className="size-3" /> AI түйін</div>
