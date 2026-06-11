@@ -4,9 +4,11 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { MangystauNav } from "@/components/MangystauNav";
 import { listReports, updateReportStatus, askEcoAdvisor, deleteReport } from "@/lib/reports.functions";
+import { isCurrentUserAdmin, claimFirstAdmin } from "@/lib/admin.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar, Trash2 } from "lucide-react";
+import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar, Trash2, ShieldAlert, LogOut } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -51,6 +53,22 @@ const CATEGORY_LABEL: Record<"kk" | "ru", Record<string, string>> = {
 };
 
 function Dashboard() {
+  const adminFn = useServerFn(isCurrentUserAdmin);
+  const claimFn = useServerFn(claimFirstAdmin);
+  const qcRoot = useQueryClient();
+  const adminQ = useQuery({ queryKey: ["isAdmin"], queryFn: () => adminFn(), retry: false });
+
+  if (adminQ.isLoading) {
+    return <div className="min-h-screen grid place-items-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
+  }
+  if (!adminQ.data?.isAdmin) {
+    return <AccessDenied onClaim={async () => {
+      const r = await claimFn();
+      if (r.claimed) qcRoot.invalidateQueries({ queryKey: ["isAdmin"] });
+      else alert("Әкімші бар. Қолданушыңызға рұқсат беру керек.");
+    }} />;
+  }
+
   const listFn = useServerFn(listReports);
   const updateFn = useServerFn(updateReportStatus);
   const askFn = useServerFn(askEcoAdvisor);
