@@ -1,19 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MangystauNav } from "@/components/MangystauNav";
 import { listReports, updateReportStatus, askEcoAdvisor, deleteReport } from "@/lib/reports.functions";
-import { isCurrentUserAdmin, claimFirstAdmin, listStaff, grantRole, revokeRole } from "@/lib/admin.functions";
+import { isCurrentUserAdmin, listStaff, grantRole, revokeRole } from "@/lib/admin.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar, Trash2, ShieldAlert, LogOut, Users, ShieldCheck, UserPlus, UserMinus } from "lucide-react";
+import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar, Trash2, Users, ShieldCheck, UserPlus, UserMinus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/_authenticated/dashboard")({
-  ssr: false,
-  head: () => ({ meta: [{ title: "Әкімдік дашборды — TazaEl Mangystau" }] }),
+export const Route = createFileRoute("/dashboard")({
+  head: () => ({ meta: [{ title: "Әкімдік хабы — TazaEl Mangystau" }] }),
   component: DashboardGate,
 });
 
@@ -53,59 +52,37 @@ const CATEGORY_LABEL: Record<"kk" | "ru", Record<string, string>> = {
 };
 
 function DashboardGate() {
+  const [user, setUser] = useState<any>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      setChecking(false);
+    });
+  }, []);
+
   const adminFn = useServerFn(isCurrentUserAdmin);
-  const claimFn = useServerFn(claimFirstAdmin);
-  const qcRoot = useQueryClient();
-  const adminQ = useQuery({ queryKey: ["isAdmin"], queryFn: () => adminFn(), retry: false });
-  const [claiming, setClaiming] = useState(false);
+  const adminQ = useQuery({
+    queryKey: ["isAdmin", user?.id],
+    queryFn: () => adminFn(),
+    retry: false,
+    enabled: !!user,
+  });
 
-  async function handleClaim() {
-    setClaiming(true);
-    try {
-      const r = await claimFn();
-      if (r.claimed) qcRoot.invalidateQueries({ queryKey: ["isAdmin"] });
-      else alert("Әкімші тағайындалған. Қолданушыңызға қолдағы әкімшіден рұқсат сұраңыз.");
-    } catch (e: any) {
-      alert(e?.message ?? "Қате");
-    } finally { setClaiming(false); }
-  }
-
-  if (adminQ.isLoading) {
-    return <div className="min-h-screen grid place-items-center"><Loader2 className="size-6 animate-spin text-primary" /></div>;
-  }
-  if (!adminQ.data?.isAdmin) {
-    return <AccessDenied onClaim={handleClaim} claiming={claiming} />;
-  }
-  return <Dashboard />;
-}
-
-function AccessDenied({ onClaim, claiming }: { onClaim: () => void; claiming: boolean }) {
-  return (
-    <div className="min-h-screen bg-secondary/30">
-      <MangystauNav />
-      <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <div className="size-16 mx-auto rounded-2xl bg-red-50 text-red-600 grid place-items-center mb-4">
-          <ShieldAlert className="size-8" />
-        </div>
-        <h1 className="font-display text-2xl font-bold mb-2">Рұқсат жоқ</h1>
-        <p className="text-sm text-foreground/60 mb-6">
-          Сізде әкімдік панеліне кіруге рұқсат жоқ. Әкімшіден рұқсат сұраңыз немесе төмендегі түймемен бірінші әкімші болыңыз (тек ешбір әкімші болмаған жағдайда жұмыс істейді).
-        </p>
-        <button onClick={onClaim} disabled={claiming}
-          className="bg-foreground text-background px-6 py-3 rounded-xl font-bold inline-flex items-center gap-2 disabled:opacity-50">
-          {claiming && <Loader2 className="size-4 animate-spin" />}
-          Бірінші әкімші болу
-        </button>
-        <button onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}
-          className="block mx-auto mt-4 text-xs text-foreground/50 hover:text-primary inline-flex items-center gap-1">
-          <LogOut className="size-3" /> Шығу
-        </button>
+  if (checking || (user && adminQ.isLoading)) {
+    return (
+      <div className="min-h-screen grid place-items-center">
+        <Loader2 className="size-6 animate-spin text-primary" />
       </div>
-    </div>
-  );
+    );
+  }
+
+  const isAdmin = !!adminQ.data?.isAdmin;
+  return <Dashboard isAdmin={isAdmin} />;
 }
 
-function Dashboard() {
+function Dashboard({ isAdmin }: { isAdmin: boolean }) {
   const listFn = useServerFn(listReports);
   const updateFn = useServerFn(updateReportStatus);
   const askFn = useServerFn(askEcoAdvisor);
@@ -153,7 +130,6 @@ function Dashboard() {
     return Object.entries(m).map(([status, count]) => ({ status, label: STATUS_LABEL[lang][status] ?? status, count }));
   }, [data, lang]);
 
-  // City detection from location_name (e.g. "Ақтау, 7 мкр" -> "Ақтау")
   function detectCity(loc: string): string {
     const s = (loc ?? "").toLowerCase();
     if (s.includes("жаңаөзен") || s.includes("жанаозен") || s.includes("zhanaozen")) return "Жаңаөзен";
@@ -233,21 +209,23 @@ function Dashboard() {
         </div>
 
         {/* AI Advisor */}
-        <div className="bg-foreground text-background rounded-3xl p-6 md:p-8 mb-8">
-          <div className="flex items-center gap-2 mb-3">
-            <h2 className="font-display text-xl font-bold">{L ? "AI Эко-кеңесші" : "AI Эко-советник"}</h2>
+        {isAdmin && (
+          <div className="bg-foreground text-background rounded-3xl p-6 md:p-8 mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="font-display text-xl font-bold">{L ? "AI Эко-кеңесші" : "AI Эко-советник"}</h2>
+            </div>
+            <p className="text-sm text-background/60 mb-4">{L ? "Маңғыстаудың экологиясы туралы кез-келген сұрақ қойыңыз. TazaEl AI жауап береді." : "Задайте любой вопрос об экологии Мангистау. TazaEl AI ответит."}</p>
+            <div className="flex gap-2 flex-col sm:flex-row">
+              <input value={question} onChange={(e) => setQuestion(e.target.value)}
+                placeholder={L ? "мыс. Қошқар-Атаны қалай оқшаулауға болады?" : "напр. Как изолировать Кошкар-Ату?"}
+                className="flex-1 bg-background/10 border border-background/20 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none placeholder:text-background/40" />
+              <button onClick={ask} disabled={asking || !question.trim()} className="bg-accent text-primary px-6 py-3 rounded-xl font-bold disabled:opacity-50 inline-flex items-center gap-2 justify-center">
+                {asking && <Loader2 className="size-4 animate-spin" />} {L ? "Сұрау" : "Спросить"}
+              </button>
+            </div>
+            {answer && <div className="mt-4 bg-background/10 border border-background/20 rounded-2xl p-4 text-sm leading-relaxed whitespace-pre-wrap">{answer}</div>}
           </div>
-          <p className="text-sm text-background/60 mb-4">{L ? "Маңғыстаудың экологиясы туралы кез-келген сұрақ қойыңыз. TazaEl AI жауап береді." : "Задайте любой вопрос об экологии Мангистау. TazaEl AI ответит."}</p>
-          <div className="flex gap-2 flex-col sm:flex-row">
-            <input value={question} onChange={(e) => setQuestion(e.target.value)}
-              placeholder={L ? "мыс. Қошқар-Атаны қалай оқшаулауға болады?" : "напр. Как изолировать Кошкар-Ату?"}
-              className="flex-1 bg-background/10 border border-background/20 rounded-xl px-4 py-3 text-sm focus:border-accent outline-none placeholder:text-background/40" />
-            <button onClick={ask} disabled={asking || !question.trim()} className="bg-accent text-primary px-6 py-3 rounded-xl font-bold disabled:opacity-50 inline-flex items-center gap-2 justify-center">
-              {asking && <Loader2 className="size-4 animate-spin" />} {L ? "Сұрау" : "Спросить"}
-            </button>
-          </div>
-          {answer && <div className="mt-4 bg-background/10 border border-background/20 rounded-2xl p-4 text-sm leading-relaxed whitespace-pre-wrap">{answer}</div>}
-        </div>
+        )}
 
         {/* Reports table */}
         <div className="mb-4">
@@ -292,11 +270,17 @@ function Dashboard() {
                       ) : <span className="text-xs text-foreground/30">—</span>}
                     </td>
                     <td className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
-                      <select value={r.status} disabled={mut.isPending}
-                        onChange={(e) => mut.mutate({ id: r.id, status: e.target.value })}
-                        className="text-xs font-bold px-2 py-1.5 rounded-lg border border-foreground/10 bg-background">
-                        {STATUSES.map((s) => (<option key={s} value={s}>{STATUS_LABEL[lang][s]}</option>))}
-                      </select>
+                      {isAdmin ? (
+                        <select value={r.status} disabled={mut.isPending}
+                          onChange={(e) => mut.mutate({ id: r.id, status: e.target.value })}
+                          className="text-xs font-bold px-2 py-1.5 rounded-lg border border-foreground/10 bg-background">
+                          {STATUSES.map((s) => (<option key={s} value={s}>{STATUS_LABEL[lang][s]}</option>))}
+                        </select>
+                      ) : (
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full text-white" style={{ background: STATUS_COLOR[r.status] ?? "#64748b" }}>
+                          {STATUS_LABEL[lang][r.status] ?? r.status}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -305,9 +289,11 @@ function Dashboard() {
           </div>
         </Card>
 
-        <div className="mt-8">
-          <StaffManager />
-        </div>
+        {isAdmin && (
+          <div className="mt-8">
+            <StaffManager />
+          </div>
+        )}
       </div>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
@@ -359,35 +345,39 @@ function Dashboard() {
                   </div>
                 )}
 
-                <div>
-                  <p className="text-[10px] uppercase font-bold tracking-wider text-foreground/50 mb-2">{L ? "Мәртебесін өзгерту" : "Изменить статус"}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {STATUSES.map((s) => (
-                      <button key={s} disabled={mut.isPending}
-                        onClick={() => mut.mutate({ id: selected.id, status: s }, { onSuccess: () => setSelected({ ...selected, status: s }) })}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${selected.status === s ? "text-white border-transparent" : "border-foreground/10 hover:bg-secondary"}`}
-                        style={selected.status === s ? { background: STATUS_COLOR[s] } : {}}>
-                        {STATUS_LABEL[lang][s]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {isAdmin && (
+                  <>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold tracking-wider text-foreground/50 mb-2">{L ? "Мәртебесін өзгерту" : "Изменить статус"}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {STATUSES.map((s) => (
+                          <button key={s} disabled={mut.isPending}
+                            onClick={() => mut.mutate({ id: selected.id, status: s }, { onSuccess: () => setSelected({ ...selected, status: s }) })}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${selected.status === s ? "text-white border-transparent" : "border-foreground/10 hover:bg-secondary"}`}
+                            style={selected.status === s ? { background: STATUS_COLOR[s] } : {}}>
+                            {STATUS_LABEL[lang][s]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                {selected.status === "resolved" && (
-                  <div className="pt-4 border-t border-foreground/5">
-                    <button
-                      disabled={delMut.isPending}
-                      onClick={() => {
-                        if (confirm(L ? "Бұл шешілген репортты толық өшіруді растайсыз ба?" : "Удалить этот решённый репорт навсегда?")) {
-                          delMut.mutate(selected.id);
-                        }
-                      }}
-                      className="inline-flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      {delMut.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
-                      {L ? "Шешілген репортты өшіру" : "Удалить решённый репорт"}
-                    </button>
-                  </div>
+                    {selected.status === "resolved" && (
+                      <div className="pt-4 border-t border-foreground/5">
+                        <button
+                          disabled={delMut.isPending}
+                          onClick={() => {
+                            if (confirm(L ? "Бұл шешілген репортты толық өшіруді растайсыз ба?" : "Удалить этот решённый репорт навсегда?")) {
+                              delMut.mutate(selected.id);
+                            }
+                          }}
+                          className="inline-flex items-center gap-2 text-xs font-bold px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {delMut.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                          {L ? "Шешілген репортты өшіру" : "Удалить решённый репорт"}
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </>
