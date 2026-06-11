@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { MangystauNav } from "@/components/MangystauNav";
 import { createReport } from "@/lib/reports.functions";
 import { useLanguage } from "@/context/LanguageContext";
@@ -24,6 +25,7 @@ const MANGYSTAU_LOCATIONS = [
 function ReportPage() {
   const create = useServerFn(createReport);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { lang } = useLanguage();
   const L = lang === "kk";
 
@@ -55,6 +57,8 @@ function ReportPage() {
         },
       });
       setSuccess(r);
+      // Refetch map + reports so the new point appears immediately
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
       try {
         const KEY = "tazael_my_reports";
         const prev: string[] = JSON.parse(localStorage.getItem(KEY) ?? "[]");
