@@ -68,8 +68,8 @@ export function EcoMap({ points, height = 520, center = [43.85, 51.5], zoom = 8,
             <div style="font-weight:700;margin-bottom:4px">${escapeHtml(p.title)}</div>
             <div style="font-size:12px;color:#64748b;margin-bottom:6px">${escapeHtml(p.location_name)}</div>
             <div style="display:flex;gap:4px;flex-wrap:wrap">
-              <span style="background:${color};color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:600">${p.severity.toUpperCase()}</span>
-              <span style="background:#f1f5f9;color:#475569;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:600">${p.status}</span>
+              <span style="background:${color};color:#fff;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:600">${escapeHtml((SEVERITY_LABEL[p.severity] ?? SEVERITY_LABEL.low)[lang]).toUpperCase()}</span>
+              <span style="background:#f1f5f9;color:#475569;font-size:10px;padding:2px 6px;border-radius:999px;font-weight:600">${escapeHtml(p.status)}</span>
             </div>
           </div>`
         );
