@@ -432,3 +432,108 @@ function CityChip({ active, label, count, onClick }: { active: boolean; label: s
     </button>
   );
 }
+
+function StaffManager() {
+  const { lang } = useLanguage();
+  const L = lang === "kk";
+  const listFn = useServerFn(listStaff);
+  const grantFn = useServerFn(grantRole);
+  const revokeFn = useServerFn(revokeRole);
+  const qc = useQueryClient();
+  const { data = [], isLoading } = useQuery({ queryKey: ["staff"], queryFn: () => listFn() });
+  const grantMut = useMutation({
+    mutationFn: (v: { user_id: string; role: "admin" | "moderator" | "user" }) => grantFn({ data: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff"] }),
+  });
+  const revokeMut = useMutation({
+    mutationFn: (v: { user_id: string; role: "admin" | "moderator" | "user" }) => revokeFn({ data: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["staff"] }),
+    onError: (e: any) => alert(e?.message ?? "Қате"),
+  });
+
+  const ROLE_BADGE: Record<string, string> = {
+    admin: "bg-red-100 text-red-700 border-red-200",
+    moderator: "bg-amber-100 text-amber-700 border-amber-200",
+    user: "bg-secondary text-foreground/60 border-foreground/10",
+  };
+
+  return (
+    <Card title={L ? "Қызметкерлерді басқару" : "Управление сотрудниками"}>
+      <p className="text-xs text-foreground/60 mb-4 -mt-2 inline-flex items-center gap-1.5">
+        <Users className="size-3.5" />
+        {L
+          ? "Жаңа қызметкер /auth арқылы тіркеледі, содан кейін осы жерден рөл беріңіз."
+          : "Новый сотрудник регистрируется через /auth, затем выдайте роль здесь."}
+      </p>
+      {isLoading ? (
+        <div className="py-8 grid place-items-center"><Loader2 className="size-5 animate-spin text-primary" /></div>
+      ) : (
+        <div className="overflow-x-auto -mx-6">
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase text-foreground/50">
+              <tr className="border-b border-foreground/5">
+                <th className="text-left font-semibold px-6 py-3">Email</th>
+                <th className="text-left font-semibold px-3 py-3">{L ? "Рөлдер" : "Роли"}</th>
+                <th className="text-left font-semibold px-3 py-3">{L ? "Тіркелген" : "Зарегистрирован"}</th>
+                <th className="text-right font-semibold px-6 py-3">{L ? "Әрекет" : "Действия"}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.length === 0 && (
+                <tr><td colSpan={4} className="px-6 py-8 text-center text-foreground/40 text-xs">{L ? "Қызметкер жоқ" : "Нет сотрудников"}</td></tr>
+              )}
+              {data.map((u: any) => {
+                const isAdmin = u.roles.includes("admin");
+                const isMod = u.roles.includes("moderator");
+                return (
+                  <tr key={u.id} className="border-b border-foreground/5">
+                    <td className="px-6 py-3 font-medium">{u.email || <span className="text-foreground/40">—</span>}</td>
+                    <td className="px-3 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {u.roles.length === 0 && <span className="text-[10px] text-foreground/40">{L ? "рөл жоқ" : "нет ролей"}</span>}
+                        {u.roles.map((r: string) => (
+                          <span key={r} className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${ROLE_BADGE[r] ?? ""}`}>{r}</span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-xs text-foreground/60">{new Date(u.created_at).toLocaleDateString(lang === "kk" ? "kk-KZ" : "ru-RU")}</td>
+                    <td className="px-6 py-3">
+                      <div className="flex flex-wrap gap-1.5 justify-end">
+                        {isAdmin ? (
+                          <button disabled={revokeMut.isPending}
+                            onClick={() => { if (confirm(L ? "admin рөлін алып тастау?" : "Снять роль admin?")) revokeMut.mutate({ user_id: u.id, role: "admin" }); }}
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50 inline-flex items-center gap-1 disabled:opacity-50">
+                            <UserMinus className="size-3" /> admin
+                          </button>
+                        ) : (
+                          <button disabled={grantMut.isPending}
+                            onClick={() => grantMut.mutate({ user_id: u.id, role: "admin" })}
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-md border border-red-200 text-red-600 hover:bg-red-50 inline-flex items-center gap-1 disabled:opacity-50">
+                            <ShieldCheck className="size-3" /> +admin
+                          </button>
+                        )}
+                        {isMod ? (
+                          <button disabled={revokeMut.isPending}
+                            onClick={() => revokeMut.mutate({ user_id: u.id, role: "moderator" })}
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50 inline-flex items-center gap-1 disabled:opacity-50">
+                            <UserMinus className="size-3" /> mod
+                          </button>
+                        ) : (
+                          <button disabled={grantMut.isPending}
+                            onClick={() => grantMut.mutate({ user_id: u.id, role: "moderator" })}
+                            className="text-[10px] font-bold uppercase px-2 py-1 rounded-md border border-amber-200 text-amber-700 hover:bg-amber-50 inline-flex items-center gap-1 disabled:opacity-50">
+                            <UserPlus className="size-3" /> +mod
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
