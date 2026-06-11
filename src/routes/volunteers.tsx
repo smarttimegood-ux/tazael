@@ -1,9 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { MangystauNav } from "@/components/MangystauNav";
 import { useLanguage } from "@/context/LanguageContext";
 import { Users, Leaf, Waves, Trash2, Sprout, HandHeart, X, ArrowRight, CheckCircle2, Calendar, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  listVolunteerStats,
+  listMyMemberships,
+  joinGroup,
+  leaveGroup,
+  createDonation,
+} from "@/lib/volunteers.functions";
 
 export const Route = createFileRoute("/volunteers")({
   head: () => ({
@@ -22,7 +32,7 @@ type Group = {
   icon: any;
   name: { kk: string; ru: string };
   goal: { kk: string; ru: string };
-  members: number;
+  baseMembers: number;
   city: { kk: string; ru: string };
   works: { kk: string; ru: string }[];
   participants: string[];
@@ -45,7 +55,7 @@ type Fund = {
   title: { kk: string; ru: string };
   goal_text: { kk: string; ru: string };
   target: number; // KZT
-  raised: number;
+  baseRaised: number;
 };
 
 const GROUPS: Group[] = [
