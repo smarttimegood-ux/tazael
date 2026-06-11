@@ -9,7 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, 
 import { Sparkles, Loader2, AlertTriangle, CheckCircle2, Clock, Activity, X, MapPin, Calendar, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   ssr: false,
   head: () => ({ meta: [{ title: "Әкімдік дашборды — TazaEl Mangystau" }] }),
   component: Dashboard,
