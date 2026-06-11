@@ -395,7 +395,8 @@ function VolunteersPage() {
 
         <div className="grid md:grid-cols-2 gap-5">
           {funds.map((f) => {
-            const pct = Math.min(100, Math.round((f.raised / f.target) * 100));
+            const raisedTotal = Math.min(f.target, fundRaised(f.id, f.raised));
+            const pct = Math.min(100, Math.round((raisedTotal / f.target) * 100));
             return (
               <div key={f.id} className="bg-background border border-foreground/10 rounded-3xl p-6 flex flex-col">
                 <div className="flex items-start gap-4 mb-4">
@@ -411,7 +412,7 @@ function VolunteersPage() {
                     <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                   </div>
                   <div className="flex justify-between mt-2 text-xs">
-                    <span className="font-bold text-foreground">{fmtKZT(f.raised)}</span>
+                    <span className="font-bold text-foreground">{fmtKZT(raisedTotal)}</span>
                     <span className="text-foreground/50">{L ? "мақсат" : "цель"}: {fmtKZT(f.target)}</span>
                   </div>
                   <p className="text-[11px] text-primary font-bold mt-1">{pct}% {L ? "жиналды" : "собрано"}</p>
