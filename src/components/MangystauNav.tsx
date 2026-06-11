@@ -20,7 +20,7 @@ export function MangystauNav() {
       <div className="flex justify-between items-center gap-3">
       <div className="flex items-center gap-6 md:gap-10 min-w-0">
         <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setOpen(false)}>
-          <div className="size-8 rounded-xl bg-primary grid place-items-center text-primary-foreground font-extrabold font-display text-sm">T</div>
+          <div className="size-9 rounded-2xl bg-gradient-to-br from-primary to-brand-lime grid place-items-center text-white font-extrabold font-display text-base shadow-lg shadow-primary/25 ring-1 ring-white/20">T</div>
           <div className="flex flex-col leading-none min-w-0">
             <span className="font-display text-base font-extrabold tracking-tight text-foreground">TazaEl</span>
             <span className="text-[10px] text-foreground/50 font-medium uppercase tracking-wider">Маңғыстау</span>
