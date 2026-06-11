@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VolunteersRouteImport } from './routes/volunteers'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as MyReportsRouteImport } from './routes/my-reports'
 import { Route as MapRouteImport } from './routes/map'
@@ -17,6 +18,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 
+const VolunteersRoute = VolunteersRouteImport.update({
+  id: '/volunteers',
+  path: '/volunteers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportRoute = ReportRouteImport.update({
   id: '/report',
   path: '/report',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/map': typeof MapRoute
   '/my-reports': typeof MyReportsRoute
   '/report': typeof ReportRoute
+  '/volunteers': typeof VolunteersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
 }
 export interface FileRoutesByTo {
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/map': typeof MapRoute
   '/my-reports': typeof MyReportsRoute
   '/report': typeof ReportRoute
+  '/volunteers': typeof VolunteersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
 }
 export interface FileRoutesById {
@@ -76,13 +84,28 @@ export interface FileRoutesById {
   '/map': typeof MapRoute
   '/my-reports': typeof MyReportsRoute
   '/report': typeof ReportRoute
+  '/volunteers': typeof VolunteersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/map' | '/my-reports' | '/report' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/map'
+    | '/my-reports'
+    | '/report'
+    | '/volunteers'
+    | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/map' | '/my-reports' | '/report' | '/dashboard'
+  to:
+    | '/'
+    | '/auth'
+    | '/map'
+    | '/my-reports'
+    | '/report'
+    | '/volunteers'
+    | '/dashboard'
   id:
     | '__root__'
     | '/'
@@ -91,6 +114,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/my-reports'
     | '/report'
+    | '/volunteers'
     | '/_authenticated/dashboard'
   fileRoutesById: FileRoutesById
 }
@@ -101,10 +125,18 @@ export interface RootRouteChildren {
   MapRoute: typeof MapRoute
   MyReportsRoute: typeof MyReportsRoute
   ReportRoute: typeof ReportRoute
+  VolunteersRoute: typeof VolunteersRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/volunteers': {
+      id: '/volunteers'
+      path: '/volunteers'
+      fullPath: '/volunteers'
+      preLoaderRoute: typeof VolunteersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/report': {
       id: '/report'
       path: '/report'
@@ -175,17 +207,8 @@ const rootRouteChildren: RootRouteChildren = {
   MapRoute: MapRoute,
   MyReportsRoute: MyReportsRoute,
   ReportRoute: ReportRoute,
+  VolunteersRoute: VolunteersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
