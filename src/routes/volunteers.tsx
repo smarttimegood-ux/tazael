@@ -438,7 +438,7 @@ function VolunteersPage() {
             </div>
             <div className="flex-1">
               <h3 className="font-display text-2xl font-bold">{openGroup.name[lang]}</h3>
-              <p className="text-sm text-foreground/60">{openGroup.city[lang]} · {openGroup.members} {L ? "мүше" : "участников"}</p>
+              <p className="text-sm text-foreground/60">{openGroup.city[lang]} · {groupCount(openGroup.id, openGroup.members)} {L ? "мүше" : "участников"}</p>
             </div>
           </div>
           <p className="text-foreground/70 leading-relaxed mb-5">{openGroup.goal[lang]}</p>
@@ -448,7 +448,7 @@ function VolunteersPage() {
               {openGroup.participants.map((p, i) => (
                 <div key={i} className="size-9 rounded-full bg-primary/10 grid place-items-center text-sm font-bold text-primary">{p}</div>
               ))}
-              <div className="size-9 rounded-full bg-foreground text-background grid place-items-center text-xs font-bold">+{openGroup.members - openGroup.participants.length}</div>
+              <div className="size-9 rounded-full bg-foreground text-background grid place-items-center text-xs font-bold">+{Math.max(0, groupCount(openGroup.id, openGroup.members) - openGroup.participants.length)}</div>
             </div>
           </div>
           <div className="mb-6">
@@ -463,11 +463,11 @@ function VolunteersPage() {
             </ul>
           </div>
           <button
-            onClick={() => { join(openGroup); setOpenGroup(null); }}
-            disabled={joined[openGroup.id]}
-            className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 font-bold hover:opacity-90 disabled:bg-foreground/10 disabled:text-foreground/50"
+            onClick={() => { handleJoin(openGroup); setOpenGroup(null); }}
+            disabled={joinMut.isPending || leaveMut.isPending}
+            className={`w-full rounded-2xl py-3.5 font-bold transition-opacity hover:opacity-90 disabled:opacity-60 ${isJoined(openGroup.id) ? "bg-secondary text-foreground border border-foreground/10" : "bg-primary text-primary-foreground"}`}
           >
-            {joined[openGroup.id] ? (L ? "Сіз бұл топтасыз ✓" : "Вы уже в группе ✓") : (L ? "Топқа қосылу" : "Вступить в группу")}
+            {isJoined(openGroup.id) ? (L ? "Топтан шығу" : "Выйти из группы") : (L ? "Топқа қосылу" : "Вступить в группу")}
           </button>
         </Modal>
       )}
