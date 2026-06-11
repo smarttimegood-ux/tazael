@@ -18,11 +18,19 @@ const SEVERITY_COLOR: Record<string, string> = {
   critical: "#dc2626",
 };
 
-export function EcoMap({ points, height = 520, center = [43.85, 51.5], zoom = 8 }: {
+const SEVERITY_LABEL: Record<string, { kk: string; ru: string }> = {
+  low: { kk: "Төмен", ru: "Низкая" },
+  medium: { kk: "Орташа", ru: "Средняя" },
+  high: { kk: "Жоғары", ru: "Высокая" },
+  critical: { kk: "Аса қауіпті", ru: "Критическая" },
+};
+
+export function EcoMap({ points, height = 520, center = [43.85, 51.5], zoom = 8, lang = "kk" }: {
   points: MapPoint[];
   height?: number;
   center?: [number, number];
   zoom?: number;
+  lang?: "kk" | "ru";
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
