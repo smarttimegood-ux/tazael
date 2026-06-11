@@ -32,7 +32,7 @@ type Group = {
   icon: any;
   name: { kk: string; ru: string };
   goal: { kk: string; ru: string };
-  baseMembers: number;
+  members: number;
   city: { kk: string; ru: string };
   works: { kk: string; ru: string }[];
   participants: string[];
@@ -55,7 +55,7 @@ type Fund = {
   title: { kk: string; ru: string };
   goal_text: { kk: string; ru: string };
   target: number; // KZT
-  baseRaised: number;
+  raised: number;
 };
 
 const GROUPS: Group[] = [
